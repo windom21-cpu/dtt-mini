@@ -60,6 +60,19 @@
   }
   #wave-btn:disabled { background: #555; cursor: default; }
   #wave-btn { touch-action: manipulation; }
+  #mute-btn {
+    margin-left: auto;
+    padding: 8px 12px;
+    background: #333;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #mute-btn.muted { background: #5a2a2a; border-color: #a55; }
+  #topbar #wave-btn { margin-left: 0; }
   #canvas-wrap {
     flex: 1;
     display: flex;
@@ -118,6 +131,7 @@
     <span class="stat">💰 <span id="money">0</span></span>
     <span class="stat">❤️ <span id="lives">0</span></span>
     <span class="stat">🌊 <span id="wave">0</span></span>
+    <button id="mute-btn" title="効果音">🔊</button>
     <button id="wave-btn">ウェーブ開始</button>
   </div>
   <div id="canvas-wrap">
@@ -158,6 +172,68 @@ document.addEventListener('dblclick', e => e.preventDefault());
 const COLS = 20, ROWS = 15, CELL = 30;
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+
+const audio = (() => {
+  let actx = null;
+  let muted = localStorage.getItem('dtt-muted') === '1';
+  let frameBudget = 0;
+  function ensureCtx() {
+    if (!actx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      actx = new AC();
+    }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function play(type) {
+    if (muted) return;
+    if (frameBudget >= 4) return;
+    const c = ensureCtx();
+    if (!c || c.state !== 'running') return;
+    frameBudget++;
+    const now = c.currentTime;
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.connect(gain); gain.connect(c.destination);
+    if (type === 'pellet') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.04);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.10, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+      osc.start(now); osc.stop(now + 0.06);
+    } else if (type === 'cannon') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.15);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.22, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'aa') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(720, now);
+      osc.frequency.exponentialRampToValueAtTime(360, now + 0.08);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.13, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+      osc.start(now); osc.stop(now + 0.1);
+    }
+  }
+  function tick() { frameBudget = 0; }
+  function toggleMute() {
+    muted = !muted;
+    localStorage.setItem('dtt-muted', muted ? '1' : '0');
+    if (!muted) ensureCtx();
+    return muted;
+  }
+  function isMuted() { return muted; }
+  return { play, tick, toggleMute, isMuted, ensureCtx };
+})();
+function unlockAudio() { audio.ensureCtx(); }
+document.addEventListener('pointerdown', unlockAudio, { once: true });
 
 const START = { x: 0, y: 7 };
 const GOAL = { x: COLS - 1, y: 7 };
@@ -389,6 +465,18 @@ document.getElementById('upgrade-btn').addEventListener('click', () => {
 
 document.getElementById('wave-btn').addEventListener('click', startWave);
 
+const muteBtn = document.getElementById('mute-btn');
+function refreshMuteBtn() {
+  const m = audio.isMuted();
+  muteBtn.textContent = m ? '🔇' : '🔊';
+  muteBtn.classList.toggle('muted', m);
+}
+muteBtn.addEventListener('click', () => {
+  audio.toggleMute();
+  refreshMuteBtn();
+});
+refreshMuteBtn();
+
 // --- waves ---
 function startWave() {
   if (gameEnded) return;
@@ -454,6 +542,7 @@ function loop(now) {
 }
 
 function update(dt) {
+  audio.tick();
   if (!inWave && !gameEnded && nextWaveTimer > 0) {
     nextWaveTimer -= dt;
     if (nextWaveTimer <= 0) {
@@ -540,6 +629,7 @@ function update(dt) {
           color: tt.bulletColor,
           speed: tt.bulletSpeed
         });
+        audio.play(t.type);
         t.cooldown = tt.fireRate;
       }
     }
