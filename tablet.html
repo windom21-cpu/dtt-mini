@@ -130,6 +130,9 @@
     <button class="tool-btn" data-type="cannon">
       大砲 $30<br><small>中・範囲</small>
     </button>
+    <button class="tool-btn" data-type="aa">
+      対空 $25<br><small>飛行のみ</small>
+    </button>
     <button class="tool-btn" id="upgrade-btn" disabled>
       強化<br><small>タワーを選択</small>
     </button>
@@ -174,6 +177,14 @@ const TOWER_TYPES = {
       { cost: 30,  range: 105, damage: 14, fireRate: 1.10, color: '#fc6', bulletColor: '#f80', splash: 38, bulletSpeed: 320 },
       { cost: 55,  range: 122, damage: 34, fireRate: 0.95, color: '#f93', bulletColor: '#f60', splash: 48, bulletSpeed: 360 },
       { cost: 120, range: 142, damage: 80, fireRate: 0.85, color: '#c60', bulletColor: '#f40', splash: 60, bulletSpeed: 400 }
+    ]
+  },
+  aa: {
+    name: '対空',
+    levels: [
+      { cost: 25, range: 110, damage: 18, fireRate: 0.40, color: '#b8e', bulletColor: '#dcf', splash: 0, bulletSpeed: 600, antiAir: true },
+      { cost: 40, range: 125, damage: 38, fireRate: 0.35, color: '#96d', bulletColor: '#dcf', splash: 0, bulletSpeed: 650, antiAir: true },
+      { cost: 90, range: 140, damage: 75, fireRate: 0.30, color: '#74b', bulletColor: '#ecf', splash: 0, bulletSpeed: 700, antiAir: true }
     ]
   }
 };
@@ -511,6 +522,7 @@ function update(dt) {
       const gx = GOAL.x * CELL + CELL / 2;
       const gy = GOAL.y * CELL + CELL / 2;
       for (const e of enemies) {
+        if (tt.antiAir && !e.flying) continue;
         const d = Math.hypot(e.x - cx, e.y - cy);
         if (d > tt.range) continue;
         const gd = Math.hypot(e.x - gx, e.y - gy);
