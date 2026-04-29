@@ -164,6 +164,23 @@
     cursor: pointer;
   }
   #mute-btn.muted { background: #5a2a2a; border-color: #a55; }
+  #help-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    color: #888;
+    border: 1px solid #555;
+    border-radius: 50%;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 8px;
+    cursor: pointer;
+  }
+  #help-link:hover { color: #ccc; border-color: #888; }
   #msg { margin-top: 12px; min-height: 24px; color: #fc6; font-size: 14px; }
   hr { border: 0; border-top: 1px solid #444; margin: 12px 0; }
   small.hint { color: #888; line-height: 1.6; }
@@ -219,6 +236,7 @@
     </button>
     <button id="wave-btn">ウェーブ開始</button>
     <button id="mute-btn">🔊 効果音 ON</button>
+    <a id="help-link" href="guide.html" target="_blank" rel="noopener" title="攻略ガイド">?</a>
     <div id="msg"></div>
     <div id="tower-info" style="display:none">
       <hr>

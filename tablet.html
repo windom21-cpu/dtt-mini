@@ -78,6 +78,24 @@
     touch-action: manipulation;
   }
   #mute-btn.muted { background: #5a2a2a; border-color: #a55; }
+  #help-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    color: #888;
+    border: 1px solid #555;
+    border-radius: 50%;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    flex-shrink: 0;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #help-link:hover, #help-link:active { color: #ccc; border-color: #888; }
   #topbar #wave-btn { margin-left: 0; }
   #canvas-wrap {
     flex: 1;
@@ -243,6 +261,7 @@
     <span class="stat">🌊 <span id="wave">0</span></span>
     <span class="stat" title="ベスト">⭐ W<span id="best">0</span></span>
     <button id="mute-btn" title="効果音">🔊</button>
+    <a id="help-link" href="guide.html" target="_blank" rel="noopener" title="攻略ガイド">?</a>
     <button id="wave-btn">ウェーブ開始</button>
   </div>
   <div id="canvas-wrap">
