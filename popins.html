@@ -287,6 +287,19 @@
 <script>
 'use strict';
 
+// ===== EARLY LOG (デバッグ専用) =====
+(function() {
+  function setDbg(msg) {
+    var el = document.getElementById('debug-info');
+    if (el) el.textContent = msg + '  ' + (el.textContent || '');
+  }
+  window._earlyLog = setDbg;
+  setDbg('JS-START');
+  window.addEventListener('error', function(e) {
+    setDbg('JS-ERROR:' + e.message + '@' + (e.lineno || '?'));
+  });
+})();
+
 // ============================================================
 // 論理座標系（M1: 横スクロールなし、固定画面）
 // ============================================================
@@ -2680,6 +2693,7 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+window._earlyLog && window._earlyLog('JS-END');
 </script>
 </body>
 </html>
