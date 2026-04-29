@@ -1414,7 +1414,8 @@ function resetStage() {
 resetStage();
 
 // ----- 季節パーティクル -----
-const PARTICLE_INTERVAL = [0.22, 0.45, 0.28, 0.16, 0.30, 0.30];
+// idx: 0春 / 1夏 / 2ボーナス / 3秋 / 4冬 / 5ボス
+const PARTICLE_INTERVAL = [0.22, 0.45, 0.10, 0.28, 0.16, 0.30];
 
 function spawnSeasonParticle(idx) {
   const x = -20 + Math.random() * (W + 40);
@@ -1428,20 +1429,27 @@ function spawnSeasonParticle(idx) {
     p = { x, y, vx: -5, vy: 50 + Math.random() * 25,
           rot: 0, vrot: 0,
           type: 'sun', age: 0, lifespan: 12 };
-  } else if (idx === 2) { // 秋 紅葉
+  } else if (idx === 2) { // ボーナス 金キラ星
+    p = { x: Math.random() * W,
+          y: Math.random() * H,
+          vx: (Math.random() - 0.5) * 40, vy: (Math.random() - 0.5) * 40,
+          rot: Math.random() * Math.PI * 2, vrot: 4 + Math.random() * 4,
+          type: 'coinSparkle', age: 0, lifespan: 1.6 };
+  } else if (idx === 3) { // 秋 紅葉
     p = { x, y, vx: -12 - Math.random() * 8, vy: 40 + Math.random() * 30,
           rot: Math.random() * Math.PI * 2, vrot: 1.5 + Math.random() * 2,
           type: 'leaf', age: 0, lifespan: 18 };
-  } else if (idx === 3) { // 冬 雪
+  } else if (idx === 4) { // 冬 雪
     p = { x, y, vx: -3 + Math.random() * 6, vy: 25 + Math.random() * 35,
           rot: 0, vrot: 0,
           type: 'snow', age: 0, lifespan: 22 };
-  } else if (idx === 4 || idx === 5) { // ボス 火花
+  } else if (idx === 5) { // ボス 火花（銀/金）
     p = { x: W * 0.5 + (Math.random() - 0.5) * 200,
           y: H * 0.4,
           vx: (Math.random() - 0.5) * 80, vy: 50 + Math.random() * 80,
           rot: 0, vrot: 0,
-          type: idx === 4 ? 'sparkSilver' : 'sparkGold', age: 0, lifespan: 4 };
+          type: currentBossType() === 'silver' ? 'sparkSilver' : 'sparkGold',
+          age: 0, lifespan: 4 };
   }
   if (p) particles.push(p);
 }
@@ -1499,6 +1507,19 @@ function drawParticle(p) {
     ctx.beginPath();
     ctx.arc(0, 0, 1.5, 0, Math.PI * 2);
     ctx.fill();
+  } else if (p.type === 'coinSparkle') {
+    // 金色のキラ星（4方向の十字＋中心の点）
+    ctx.fillStyle = '#fff7c0';
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffd86b';
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-4, 0); ctx.lineTo(4, 0);
+    ctx.moveTo(0, -4); ctx.lineTo(0, 4);
+    ctx.stroke();
   }
   ctx.restore();
   ctx.globalAlpha = 1;
