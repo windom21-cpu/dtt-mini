@@ -411,6 +411,7 @@ let grid = Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 let towers = [];
 let enemies = [];
 let bullets = [];
+let explosions = [];
 
 let money = 75;
 let lives = 20;
@@ -741,6 +742,7 @@ function applySave(d) {
   for (const t of towers) grid[t.y][t.x] = 1;
   enemies = [];
   bullets = [];
+  explosions = [];
   money = d.money;
   lives = d.lives;
   wave = d.wave;
@@ -907,6 +909,7 @@ function update(dt) {
     const move = b.speed * dt;
     if (dist <= move) {
       if (b.splash > 0) {
+        explosions.push({ x: b.target.x, y: b.target.y, radius: b.splash, age: 0 });
         for (const e of enemies) {
           const d = Math.hypot(e.x - b.target.x, e.y - b.target.y);
           if (d <= b.splash) e.hp -= b.damage;
@@ -926,6 +929,11 @@ function update(dt) {
       money += enemies[i].reward;
       enemies.splice(i, 1);
     }
+  }
+
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    explosions[i].age += dt;
+    if (explosions[i].age >= 0.45) explosions.splice(i, 1);
   }
 
   if (inWave && spawnQueue.length === 0 && enemies.length === 0) {
@@ -1096,10 +1104,51 @@ function draw() {
   }
 
   for (const b of bullets) {
-    ctx.fillStyle = b.color;
+    if (b.splash > 0) {
+      ctx.fillStyle = 'rgba(255, 180, 60, 0.35)';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#400';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(b.x - 1.2, b.y - 1.2, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  for (const ex of explosions) {
+    const t = Math.min(1, ex.age / 0.45);
+    const alpha = 1 - t;
+    const r = ex.radius * (0.35 + t * 0.7);
+    ctx.fillStyle = 'rgba(255, 180, 60, ' + (alpha * 0.32).toFixed(3) + ')';
     ctx.beginPath();
-    ctx.arc(b.x, b.y, b.splash > 0 ? 4 : 3, 0, Math.PI * 2);
+    ctx.arc(ex.x, ex.y, r, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 230, 110, ' + alpha.toFixed(3) + ')';
+    ctx.lineWidth = 2 + (1 - t) * 2;
+    ctx.beginPath();
+    ctx.arc(ex.x, ex.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    if (t < 0.4) {
+      const flashR = ex.radius * 0.25 * (1 - t / 0.4);
+      const flashA = (1 - t / 0.4);
+      ctx.fillStyle = 'rgba(255, 255, 220, ' + flashA.toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(ex.x, ex.y, flashR, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
 }
@@ -1198,6 +1247,7 @@ function restartGame() {
   towers = [];
   enemies = [];
   bullets = [];
+  explosions = [];
   money = 75;
   lives = 20;
   wave = 0;
