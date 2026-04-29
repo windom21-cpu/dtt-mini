@@ -642,9 +642,12 @@ function stopBgm(fade = 0.3) {
   bgmGain.gain.cancelScheduledValues(now);
   bgmGain.gain.setValueAtTime(bgmGain.gain.value, now);
   bgmGain.gain.exponentialRampToValueAtTime(0.0001, now + fade);
+  // 旧BGMのオシレータだけスナップショットして停止
+  // （新BGMが setTimeout 中に push されても巻き込まない）
+  const toStop = bgmActiveOscs;
+  bgmActiveOscs = [];
   setTimeout(() => {
-    for (const o of bgmActiveOscs) { try { o.osc.stop(); } catch (e) {} }
-    bgmActiveOscs = [];
+    for (const o of toStop) { try { o.osc.stop(); } catch (e) {} }
   }, fade * 1000 + 100);
   bgmCurrent = null;
 }
