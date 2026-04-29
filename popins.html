@@ -1672,20 +1672,31 @@ function resumeFromSave() {
   updateUI();
 }
 
-// click が稀に発火しない iOS 環境の保険として pointerup でも発火させる
+// touchend を主トリガーにし、後続の synthesized click を抑止する。
+// マウス用には click をフォールバックとして残す。
 function bindButton(btn, handler) {
   let firing = false;
-  const fire = (e) => {
+  const fire = () => {
     if (firing) return;
     firing = true;
-    setTimeout(() => { firing = false; }, 500); // ダブル発火抑止
-    handler(e);
+    setTimeout(() => { firing = false; }, 700);
+    try { handler(); } catch (err) { console.error(err); }
   };
+  btn.addEventListener('touchend', (e) => {
+    // 対象ボタン上で指が離されたか座標で確認
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      const t = e.changedTouches[0];
+      const r = btn.getBoundingClientRect();
+      if (t.clientX >= r.left && t.clientX <= r.right
+          && t.clientY >= r.top && t.clientY <= r.bottom) {
+        e.preventDefault(); // 後続の synthesized click を抑止
+        fire();
+        return;
+      }
+    }
+  }, { passive: false });
+  // マウスや、touchend で発火しなかった環境用
   btn.addEventListener('click', fire);
-  btn.addEventListener('pointerup', (e) => {
-    // ボタン自身を押下→離した時のみ
-    if (e.target === btn || btn.contains(e.target)) fire(e);
-  });
 }
 
 bindButton(elTitleStartBtn, () => { ensureAudio(); startNewGame(); });
