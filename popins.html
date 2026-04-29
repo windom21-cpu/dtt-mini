@@ -286,8 +286,11 @@
 // ============================================================
 // 論理座標系（M1: 横スクロールなし、固定画面）
 // ============================================================
-const W = 960;
+// 論理座標。H は固定、W はビューポートのアスペクトに合わせて動的に変わる
+let W = 960;
 const H = 540;
+const W_MIN = 720;   // 縦長ウィンドウでも最低限の横幅を確保
+const W_MAX = 1920;  // 極端なウルトラワイド対策
 
 // ============================================================
 // DOM
@@ -656,9 +659,11 @@ let canvasOffsetX = 0, canvasOffsetY = 0;
 function fitCanvas() {
   const rect = wrap.getBoundingClientRect();
   dpr = window.devicePixelRatio || 1;
-  const sx = rect.width / W;
-  const sy = rect.height / H;
-  scale = Math.min(sx, sy);
+  // viewport のアスペクトに合わせて論理 W を伸縮（H は固定）
+  const targetAspect = rect.width / rect.height;
+  W = Math.max(W_MIN, Math.min(W_MAX, Math.round(H * targetAspect)));
+  // フィットスケール（アスペクトが一致すれば余白なし）
+  scale = Math.min(rect.width / W, rect.height / H);
   const cssW = W * scale;
   const cssH = H * scale;
   canvasOffsetX = (rect.width - cssW) / 2;
@@ -671,6 +676,10 @@ function fitCanvas() {
   cv.width = Math.round(cssW * dpr);
   cv.height = Math.round(cssH * dpr);
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  // W 変更時に画面外に出ないよう傘をクランプ
+  if (typeof umbrella !== 'undefined') {
+    umbrella.x = clamp(umbrella.x, umbrella.halfW, W - umbrella.halfW);
+  }
 }
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
