@@ -135,27 +135,30 @@
     background: #1a2238;
     border: 2px solid #ffd86b;
     border-radius: 14px;
-    padding: 24px 30px;
+    padding: 16px 22px;
     text-align: center;
     color: #fff;
     min-width: 280px;
-    max-width: 90vw;
+    max-width: 92vw;
+    max-height: 92vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     box-shadow: 0 6px 30px rgba(0,0,0,0.6);
   }
   .modal-box h2 {
-    margin: 0 0 12px;
-    font-size: 22px;
+    margin: 0 0 10px;
+    font-size: 20px;
   }
   .modal-box p {
-    margin: 6px 0 14px;
-    font-size: 14px;
+    margin: 6px 0 12px;
+    font-size: 13px;
     opacity: 0.85;
   }
   .modal-box .info-coins {
-    font-size: 16px;
+    font-size: 15px;
     color: #ffd86b;
     font-weight: bold;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
   }
   .modal-box button {
     display: block;
@@ -185,26 +188,26 @@
     color: #ddd;
   }
   .modal-box.title h1 {
-    margin: 0 0 4px;
-    font-size: 36px;
+    margin: 0 0 2px;
+    font-size: 28px;
     color: #ffd86b;
-    letter-spacing: 4px;
+    letter-spacing: 3px;
   }
   .modal-box.title .subtitle {
-    margin: 0 0 14px;
-    font-size: 13px;
+    margin: 0 0 10px;
+    font-size: 11px;
     opacity: 0.7;
   }
   .hiscore-section {
-    margin: 10px 0 18px;
-    padding: 10px 14px;
+    margin: 6px 0 10px;
+    padding: 6px 12px;
     background: rgba(0,0,0,0.3);
     border-radius: 8px;
     text-align: left;
   }
   .hiscore-section h3 {
-    margin: 0 0 6px;
-    font-size: 12px;
+    margin: 0 0 4px;
+    font-size: 11px;
     opacity: 0.7;
     text-align: center;
     letter-spacing: 1px;
@@ -212,41 +215,41 @@
   .hiscore-section ol {
     margin: 0;
     padding-left: 22px;
-    font-size: 12px;
+    font-size: 11px;
     color: #ddd;
   }
-  .hiscore-section li { margin: 3px 0; }
+  .hiscore-section li { margin: 2px 0; }
   .hiscore-section li.empty { list-style: none; opacity: 0.5; text-align: center; padding-left: 0; }
   .skin-section {
-    margin: 10px 0 14px;
-    padding: 8px 10px;
+    margin: 6px 0 10px;
+    padding: 6px 8px;
     background: rgba(0,0,0,0.3);
     border-radius: 8px;
   }
   .skin-section h3 {
-    margin: 0 0 6px;
-    font-size: 12px;
+    margin: 0 0 5px;
+    font-size: 11px;
     opacity: 0.8;
     text-align: center;
     letter-spacing: 1px;
   }
   .skin-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
   }
   .skin-item {
-    width: 44px;
-    height: 36px;
-    border-radius: 8px;
+    width: 100%;
+    aspect-ratio: 5 / 4;
+    min-height: 22px;
+    border-radius: 5px;
     border: 2px solid transparent;
     background: #2a3148;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 12px;
     padding: 0;
     overflow: hidden;
     touch-action: manipulation;
@@ -255,10 +258,26 @@
   .skin-item.locked { opacity: 0.35; cursor: not-allowed; }
   .skin-name {
     text-align: center;
-    font-size: 11px;
-    margin-top: 4px;
+    font-size: 10px;
+    margin-top: 3px;
     opacity: 0.8;
-    min-height: 14px;
+    min-height: 12px;
+  }
+  .modal-box button {
+    margin: 6px 0;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  /* 更に縦が狭い場合（横向き iPhone など） */
+  @media (max-height: 460px) {
+    .modal-box { padding: 10px 16px; }
+    .modal-box.title h1 { font-size: 22px; letter-spacing: 2px; }
+    .modal-box.title .subtitle { display: none; }
+    .hiscore-section { margin: 4px 0; padding: 4px 8px; }
+    .hiscore-section h3 { font-size: 10px; margin: 0 0 2px; }
+    .hiscore-section ol { font-size: 10px; }
+    .skin-section { margin: 4px 0; padding: 4px 6px; }
+    .modal-box button { margin: 4px 0; padding: 8px 14px; font-size: 13px; }
   }
   .hidden { display: none !important; }
   /* 狭い画面ではヘルプテキストを隠してフォントを縮小 */
@@ -1840,7 +1859,9 @@ function renderSkinGrid() {
       item.textContent = '🔒';
     } else {
       const cv = document.createElement('canvas');
-      cv.width = 40; cv.height = 28;
+      cv.width = 40; cv.height = 26;
+      cv.style.maxWidth = '90%';
+      cv.style.maxHeight = '90%';
       item.appendChild(cv);
       drawSkinPreview(cv, skin);
     }
