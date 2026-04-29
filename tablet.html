@@ -269,6 +269,7 @@
     <span class="stat">❤️ <span id="lives">0</span></span>
     <span class="stat">🌊 <span id="wave">0</span></span>
     <span class="stat" title="ベスト">⭐ W<span id="best">0</span></span>
+    <span id="debug-badge" class="stat" style="display:none; color:#f80; font-weight:bold;">🔧 DEBUG</span>
     <button id="mute-btn" title="効果音">🔊</button>
     <a id="help-link" href="guide.html" target="_blank" rel="noopener" title="攻略ガイド">?</a>
     <button id="wave-btn">ウェーブ開始</button>
@@ -483,6 +484,7 @@ let hoverFromMouse = false;
 let isRotated = false;
 let paused = false;
 let cornerBonusTriggered = false;
+let debugMode = false;
 const SAVE_KEY = 'dtt-save';
 const BEST_KEY = 'dtt-hiscores';
 
@@ -594,12 +596,14 @@ canvas.addEventListener('pointerdown', ev => {
 
   selectedTower = null;
   const t0 = TOWER_TYPES[selectedTowerType].levels[0];
-  if (money < t0.cost) { showMsg('お金が足りません'); updateUI(); return; }
+  const placeCost = debugMode ? 0 : t0.cost;
+  if (money < placeCost) { showMsg('お金が足りません'); updateUI(); return; }
   if (!canPlaceTower(cx, cy)) { showMsg('ここには置けません'); updateUI(); return; }
-  money -= t0.cost;
+  money -= placeCost;
   grid[cy][cx] = 1;
   towers.push({ x: cx, y: cy, type: selectedTowerType, level: 1, cooldown: 0 });
   recomputePaths();
+  checkDebugMode();
   checkCornerBonus();
   updateUI();
 });
@@ -632,6 +636,7 @@ document.getElementById('sell-btn').addEventListener('click', () => {
   towers.splice(idx, 1);
   selectedTower = null;
   recomputePaths();
+  checkDebugMode();
   showMsg('売却 +$' + refund);
   updateUI();
 });
@@ -640,14 +645,16 @@ document.getElementById('upgrade-btn').addEventListener('click', () => {
   if (!selectedTower) return;
   const next = nextUpgrade(selectedTower);
   if (!next) return;
-  if (next.unlockWave && wave < next.unlockWave) {
+  if (!debugMode && next.unlockWave && wave < next.unlockWave) {
     showMsg('Wave ' + next.unlockWave + ' で解禁');
     return;
   }
-  if (money < next.cost) { showMsg('お金が足りません'); return; }
-  money -= next.cost;
+  const upCost = debugMode ? 0 : next.cost;
+  if (money < upCost) { showMsg('お金が足りません'); return; }
+  money -= upCost;
   selectedTower.level++;
   showMsg(TOWER_TYPES[selectedTower.type].name + ' Lv' + selectedTower.level + ' に強化');
+  checkDebugMode();
   checkCornerBonus();
   updateUI();
 });
@@ -747,6 +754,17 @@ function checkCornerBonus() {
   money += 9999;
   showMsg('🎰 ジャックポット！ 四隅対空ボーナス +$9999');
 }
+function checkDebugMode() {
+  const corners = [[0, 0], [COLS - 1, 0], [0, ROWS - 1], [COLS - 1, ROWS - 1]];
+  const allPellet = corners.every(([cx, cy]) => {
+    const t = towers.find(t => t.x === cx && t.y === cy);
+    return t && t.type === 'pellet';
+  });
+  if (allPellet !== debugMode) {
+    debugMode = allPellet;
+    showMsg(debugMode ? '🔧 DEBUG MODE ON' : '🔧 DEBUG MODE OFF');
+  }
+}
 function saveGame() {
   if (gameEnded || paused) return;
   if (inWave || spawnQueue.length > 0 || enemies.length > 0) return;
@@ -787,6 +805,8 @@ function applySave(d) {
   spawnTimer = 0;
   gameEnded = false;
   cornerBonusTriggered = !!d.cornerBonus;
+  debugMode = false;
+  checkDebugMode();
   nextWaveTimer = (typeof d.nextWaveTimer === 'number' ? d.nextWaveTimer : NEXT_WAVE_DELAY);
   selectedTower = null;
   selectedTowerType = 'pellet';
@@ -1042,6 +1062,18 @@ function draw() {
     ctx.stroke();
   }
 
+  if (debugMode) {
+    ctx.strokeStyle = 'rgba(255, 128, 0, 0.25)';
+    ctx.lineWidth = 1;
+    for (const t of towers) {
+      if (t === selectedTower) continue;
+      const tt = towerStats(t);
+      ctx.beginPath();
+      ctx.arc(t.x * CELL + CELL / 2, t.y * CELL + CELL / 2, tt.range, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
   if (hoverFromMouse && hoverCell) {
     const cx = hoverCell.x, cy = hoverCell.y;
     if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
@@ -1126,6 +1158,8 @@ function updateUI() {
   document.getElementById('lives').textContent = lives;
   document.getElementById('wave').textContent = wave;
   document.getElementById('best').textContent = getBest();
+  const debugBadge = document.getElementById('debug-badge');
+  if (debugBadge) debugBadge.style.display = debugMode ? 'inline-flex' : 'none';
   const btn = document.getElementById('wave-btn');
   if (gameEnded) {
     btn.textContent = '—';
@@ -1155,16 +1189,17 @@ function updateUI() {
     sellBtn.innerHTML = '売却 +$' + refund + '<br><small>' + TOWER_TYPES[selectedTower.type].name + ' Lv' + selectedTower.level + '</small>';
     const next = nextUpgrade(selectedTower);
     if (next) {
-      const locked = next.unlockWave && wave < next.unlockWave;
+      const locked = !debugMode && next.unlockWave && wave < next.unlockWave;
       if (locked) {
         upBtn.disabled = true;
         upBtn.classList.remove('armed');
         upBtn.innerHTML = '強化<br><small>W' + next.unlockWave + ' 解禁</small>';
       } else {
-        const canAfford = money >= next.cost;
+        const upCost = debugMode ? 0 : next.cost;
+        const canAfford = money >= upCost;
         upBtn.disabled = !canAfford;
         upBtn.classList.toggle('armed', canAfford);
-        upBtn.innerHTML = '強化 $' + next.cost + '<br><small>→ Lv' + (selectedTower.level + 1) + '</small>';
+        upBtn.innerHTML = '強化 $' + upCost + '<br><small>→ Lv' + (selectedTower.level + 1) + '</small>';
       }
     } else {
       upBtn.disabled = true;
@@ -1227,6 +1262,7 @@ function restartGame() {
   gameEnded = false;
   paused = false;
   cornerBonusTriggered = false;
+  debugMode = false;
   nextWaveTimer = FIRST_WAVE_DELAY;
   selectedTower = null;
   selectedTowerType = 'pellet';
