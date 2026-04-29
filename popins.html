@@ -1423,7 +1423,8 @@ function handleTap(x, y) {
 // ストリップ起点のドラッグ=傘移動、タップ=発射（指で傘が隠れない設計）
 let touchStartX = null, touchStartY = null, touchMoved = false, activeTouchId = null;
 let touchStartedInStrip = false;
-const TAP_THRESHOLD = 8; // px移動量がこれ未満ならタップ扱い
+let touchStartClientX = null, touchStartClientY = null;
+const TAP_THRESHOLD_CSS = 16; // CSS pixels（端末解像度に依存しない）
 
 cv.addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -1433,6 +1434,8 @@ cv.addEventListener('touchstart', (e) => {
   const p = pointerToWorld(t.clientX, t.clientY);
   touchStartX = p.x;
   touchStartY = p.y;
+  touchStartClientX = t.clientX;
+  touchStartClientY = t.clientY;
   touchMoved = false;
   // ストリップ内で開始したら傘ドラッグモード
   touchStartedInStrip = (p.y >= STRIP_TOP);
@@ -1446,7 +1449,10 @@ cv.addEventListener('touchmove', (e) => {
   for (const t of e.changedTouches) {
     if (t.identifier !== activeTouchId) continue;
     const p = pointerToWorld(t.clientX, t.clientY);
-    if (Math.hypot(p.x - touchStartX, p.y - touchStartY) > TAP_THRESHOLD) {
+    // CSS px 基準で判定（小画面でも安定）
+    const dxCss = t.clientX - touchStartClientX;
+    const dyCss = t.clientY - touchStartClientY;
+    if (Math.hypot(dxCss, dyCss) > TAP_THRESHOLD_CSS) {
       touchMoved = true;
     }
     // ストリップ起点のときだけ傘ドラッグ
@@ -1458,17 +1464,25 @@ cv.addEventListener('touchmove', (e) => {
 
 function endTouch(e) {
   e.preventDefault();
-  let ended = false;
+  let endedTouch = null;
   for (const t of e.changedTouches) {
-    if (t.identifier === activeTouchId) { ended = true; break; }
+    if (t.identifier === activeTouchId) { endedTouch = t; break; }
   }
-  if (!ended) return;
+  if (!endedTouch) return;
   if (!touchMoved) {
     handleTap(touchStartX, touchStartY);
+  } else {
+    // ドラッグ扱いになっていても、終端位置がSTARTボタン圏内なら救済
+    const p = pointerToWorld(endedTouch.clientX, endedTouch.clientY);
+    if (phase === PHASE_MAP_WAIT && isInStartButton(p.x, p.y)) {
+      startStage();
+    }
   }
   activeTouchId = null;
   touchStartX = null;
   touchStartY = null;
+  touchStartClientX = null;
+  touchStartClientY = null;
   touchMoved = false;
 }
 cv.addEventListener('touchend', endTouch, { passive: false });
@@ -2345,7 +2359,9 @@ function drawStartButton() {
 function isInStartButton(x, y) {
   if (phase !== PHASE_MAP_WAIT) return false;
   const r = getStartButtonRect();
-  return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  // タップ判定は視覚より少し大きく（指の精度に余裕）
+  const pad = 16;
+  return x >= r.x - pad && x <= r.x + r.w + pad && y >= r.y - pad && y <= r.y + r.h + pad;
 }
 
 function drawUmbrellaIcon(x, y) {
