@@ -254,7 +254,6 @@
     <p style="margin-top:12px;font-size:11px;opacity:0.5">画面回転ロックがONの場合は解除してください</p>
   </div>
 </div>
-<div id="debug-info" style="position:fixed;left:0;right:0;top:0;z-index:99999;background:#ff0;color:#000;font-size:13px;padding:6px 8px;font-family:monospace;line-height:1.4;pointer-events:none;max-height:80px;overflow:hidden;word-break:break-all;font-weight:bold;border-bottom:2px solid red;">DEBUG: ここにタップログが出ます</div>
 <div id="title-overlay" class="modal-overlay">
   <div class="modal-box title">
     <h1>ポピンズ</h1>
@@ -286,19 +285,6 @@
 </div>
 <script>
 'use strict';
-
-// ===== EARLY LOG (デバッグ専用) =====
-(function() {
-  function setDbg(msg) {
-    var el = document.getElementById('debug-info');
-    if (el) el.textContent = msg + '  ' + (el.textContent || '');
-  }
-  window._earlyLog = setDbg;
-  setDbg('JS-START');
-  window.addEventListener('error', function(e) {
-    setDbg('JS-ERROR:' + e.message + '@' + (e.lineno || '?'));
-  });
-})();
 
 // ============================================================
 // 論理座標系（M1: 横スクロールなし、固定画面）
@@ -693,10 +679,10 @@ function fitCanvas() {
   cv.width = Math.round(cssW * dpr);
   cv.height = Math.round(cssH * dpr);
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
-  // W 変更時に画面外に出ないよう傘をクランプ
-  if (typeof umbrella !== 'undefined') {
+  // W 変更時に画面外に出ないよう傘をクランプ（umbrella未定義時は無視）
+  try {
     umbrella.x = clamp(umbrella.x, umbrella.halfW, W - umbrella.halfW);
-  }
+  } catch (_) { /* TDZ: 初回 fitCanvas 時はまだ umbrella が無い */ }
 }
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
@@ -1686,44 +1672,18 @@ function resumeFromSave() {
   updateUI();
 }
 
-// touchend / pointerup / click のいずれかで発火。座標チェックは緩め。
-// 画面下部のデバッグ行に何が起きたかを表示（不具合特定用）
-function dbgEvt(label, btn) {
-  const el = document.getElementById('debug-info');
-  if (!el) return;
-  const ts = String(Date.now()).slice(-5);
-  const id = btn && btn.id ? btn.id : '?';
-  el.textContent = `[${ts}] ${id}:${label}  ` + el.textContent;
-  if (el.textContent.length > 240) el.textContent = el.textContent.slice(0, 240);
-}
-// 1秒後にdbgEvtが動くことを自己テスト
-setTimeout(() => dbgEvt('SCRIPT-OK', { id: 'init' }), 800);
-// 最も基本的なタッチログ：body / window / canvas
-document.body.addEventListener('touchstart', (e) => {
-  const t = e.target && e.target.tagName ? e.target.tagName : '?';
-  const i = e.target && e.target.id ? '#' + e.target.id : '';
-  dbgEvt('BODY-TS:' + t + i, { id: 'body' });
-}, { passive: true });
-window.addEventListener('touchstart', () => {
-  dbgEvt('WIN-TS', { id: 'win' });
-}, { passive: true });
+// touchend / pointerup / click のいずれかで発火（重複は firing フラグで抑止）
 function bindButton(btn, handler) {
   let firing = false;
-  const fire = (src) => {
-    dbgEvt('FIRE-' + src, btn);
-    if (firing) { dbgEvt('SKIP', btn); return; }
+  const fire = () => {
+    if (firing) return;
     firing = true;
-    setTimeout(() => { firing = false; }, 700);
-    try { handler(); dbgEvt('OK', btn); }
-    catch (err) { dbgEvt('ERR:' + err.message, btn); }
+    setTimeout(() => { firing = false; }, 600);
+    handler();
   };
-  btn.addEventListener('touchstart', () => dbgEvt('touchstart', btn), { passive: true });
-  btn.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    fire('touchend');
-  }, { passive: false });
-  btn.addEventListener('pointerup', () => fire('pointerup'));
-  btn.addEventListener('click', () => fire('click'));
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); fire(); }, { passive: false });
+  btn.addEventListener('pointerup', fire);
+  btn.addEventListener('click', fire);
 }
 
 bindButton(elTitleStartBtn, () => { ensureAudio(); startNewGame(); });
@@ -2693,7 +2653,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-window._earlyLog && window._earlyLog('JS-END');
 </script>
 </body>
 </html>
