@@ -1678,17 +1678,22 @@ function resumeFromSave() {
 function dbgEvt(label, btn) {
   const el = document.getElementById('debug-info');
   if (!el) return;
-  const ts = new Date().toISOString().slice(14, 19);
-  const id = btn && btn.id ? btn.id : 'doc';
+  const ts = String(Date.now()).slice(-5);
+  const id = btn && btn.id ? btn.id : '?';
   el.textContent = `[${ts}] ${id}:${label}  ` + el.textContent;
   if (el.textContent.length > 240) el.textContent = el.textContent.slice(0, 240);
 }
-// ドキュメント全体のタッチを記録（タッチ自体が動いているか確認）
-document.addEventListener('touchstart', (e) => {
-  const tag = e.target && e.target.tagName ? e.target.tagName : '?';
-  const id = e.target && e.target.id ? '#' + e.target.id : '';
-  dbgEvt('TS-' + tag + id, { id: 'doc' });
-}, { passive: true, capture: true });
+// 1秒後にdbgEvtが動くことを自己テスト
+setTimeout(() => dbgEvt('SCRIPT-OK', { id: 'init' }), 800);
+// 最も基本的なタッチログ：body / window / canvas
+document.body.addEventListener('touchstart', (e) => {
+  const t = e.target && e.target.tagName ? e.target.tagName : '?';
+  const i = e.target && e.target.id ? '#' + e.target.id : '';
+  dbgEvt('BODY-TS:' + t + i, { id: 'body' });
+}, { passive: true });
+window.addEventListener('touchstart', () => {
+  dbgEvt('WIN-TS', { id: 'win' });
+}, { passive: true });
 function bindButton(btn, handler) {
   let firing = false;
   const fire = (src) => {
