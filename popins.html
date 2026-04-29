@@ -340,12 +340,28 @@ function ensureAudio() {
       masterGain = audioCtx.createGain();
       masterGain.gain.value = 0.5;
       masterGain.connect(audioCtx.destination);
-    } catch (e) { audioCtx = null; }
+    } catch (e) { audioCtx = null; return; }
   }
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  // suspended / interrupted どちらでも resume を試みる（iOS Safari は interrupted を返すことがある）
+  if (audioCtx.state !== 'running') {
+    try { audioCtx.resume(); } catch (e) {}
+  }
+  // 一回鳴らないとロック解除されない iOS 対策：無音1サンプルを鳴らす
+  if (!audioCtx._unlocked) {
+    try {
+      const buf = audioCtx.createBuffer(1, 1, 22050);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtx.destination);
+      src.start(0);
+      audioCtx._unlocked = true;
+    } catch (e) {}
+  }
 }
-window.addEventListener('pointerdown', ensureAudio, { once: false, passive: true });
-window.addEventListener('keydown', ensureAudio, { once: false });
+// あらゆるユーザー操作起点で audio を解除しに行く
+['pointerdown', 'touchstart', 'touchend', 'mousedown', 'click', 'keydown'].forEach(ev => {
+  window.addEventListener(ev, ensureAudio, { passive: true, capture: true });
+});
 
 function playTone(freq, dur, type = 'square', vol = 0.15, attack = 0.005) {
   if (muted || !audioCtx) return;
@@ -1537,6 +1553,7 @@ window.addEventListener('keydown', (e) => {
 
 function startStage() {
   if (phase !== PHASE_MAP_WAIT) return;
+  ensureAudio();
   tryLockLandscape(); // 初回プレイ開始時に横画面ロック試行
   stageNum++;
   resetStage();
@@ -1547,6 +1564,7 @@ function startStage() {
 function launchBall() {
   if (phase !== PHASE_PLAYING) return; // クリア演出中は発射不可
   if (paused) return;
+  ensureAudio();
   if (ballStock <= 0) {
     SE.empty();
     showContinuePopup();
