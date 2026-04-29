@@ -43,23 +43,28 @@
     align-items: center;
     gap: 14px;
     font-size: 17px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    min-height: 44px;
   }
-  #topbar .stat { white-space: nowrap; }
+  #topbar .stat { white-space: nowrap; flex-shrink: 0; }
   #wave-btn {
     margin-left: auto;
-    padding: 10px 16px;
+    padding: 10px 14px;
     background: #2a8a4a;
     color: #fff;
     border: 0;
     border-radius: 6px;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
-    min-width: 180px;
+    min-width: 0;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     cursor: pointer;
+    touch-action: manipulation;
   }
   #wave-btn:disabled { background: #555; cursor: default; }
-  #wave-btn { touch-action: manipulation; }
   #mute-btn {
     margin-left: auto;
     padding: 8px 12px;
@@ -69,6 +74,7 @@
     border-radius: 6px;
     font-size: 16px;
     cursor: pointer;
+    flex-shrink: 0;
     touch-action: manipulation;
   }
   #mute-btn.muted { background: #5a2a2a; border-color: #a55; }
@@ -219,8 +225,9 @@
   }
   @media (max-width: 480px) {
     #app { padding: 6px; gap: 4px; }
-    #topbar { font-size: 15px; gap: 8px; }
-    #wave-btn { min-width: 0; padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+    #topbar { font-size: 14px; gap: 6px; min-height: 40px; }
+    #topbar .stat { font-size: 13px; }
+    #wave-btn { padding: 7px 8px; font-size: 12px; }
     #mute-btn { padding: 6px 8px; font-size: 14px; }
     .tool-btn { padding: 10px 4px; font-size: 13px; }
     .tool-btn small { font-size: 10px; }
@@ -447,6 +454,7 @@ let hoverCell = null;
 let hoverFromMouse = false;
 let isRotated = false;
 let paused = false;
+let cornerBonusTriggered = false;
 const SAVE_KEY = 'dtt-save';
 const BEST_KEY = 'dtt-hiscores';
 
@@ -564,6 +572,7 @@ canvas.addEventListener('pointerdown', ev => {
   grid[cy][cx] = 1;
   towers.push({ x: cx, y: cy, type: selectedTowerType, level: 1, cooldown: 0 });
   recomputePaths();
+  checkCornerBonus();
   updateUI();
 });
 
@@ -611,6 +620,7 @@ document.getElementById('upgrade-btn').addEventListener('click', () => {
   money -= next.cost;
   selectedTower.level++;
   showMsg(TOWER_TYPES[selectedTower.type].name + ' Lv' + selectedTower.level + ' に強化');
+  checkCornerBonus();
   updateUI();
 });
 
@@ -641,26 +651,36 @@ function startWave() {
     showMsg('早期召喚ボーナス +$' + bonus);
   }
   const count = 6 + wave * 2;
+  const types = [];
   for (let i = 0; i < count; i++) {
     let type = 'basic';
     if (wave >= 3 && i % 4 === 0) type = 'fast';
     if (wave >= 4 && i % 5 === 2) type = 'flying';
     if (wave >= 5 && i % 6 === 0) type = 'tank';
     if (wave >= 8 && i % 3 === 0) type = 'fast';
-    spawnQueue.push({ type, delay: Math.max(0.35, 0.7 - wave * 0.02) });
+    types.push(type);
   }
-  if (wave % 5 === 0) {
-    spawnQueue.push({ type: 'bonus', delay: Math.max(0.35, 0.7 - wave * 0.02) });
+  if (wave % 5 === 0) types.push('bonus');
+  if (earlyCall) {
+    while (spawnQueue.length > 0) {
+      const next = spawnQueue.shift();
+      spawnEnemy(next.type, next.wave);
+    }
+    for (const type of types) spawnEnemy(type, wave);
+  } else {
+    const delay = Math.max(0.35, 0.7 - wave * 0.02);
+    for (const type of types) spawnQueue.push({ type, delay, wave });
   }
   spawnTimer = 0;
   updateUI();
 }
 
-function spawnEnemy(type) {
+function spawnEnemy(type, w) {
+  if (w === undefined) w = wave;
   const e = ENEMY_TYPES[type];
-  const hp = Math.round(e.hp * computeHpScale(wave));
-  const speed = e.speed * computeSpeedMul(wave);
-  const reward = e.reward + (wave > 20 ? Math.floor((wave - 20) / 4) : 0);
+  const hp = Math.round(e.hp * computeHpScale(w));
+  const speed = e.speed * computeSpeedMul(w);
+  const reward = e.reward + (w > 20 ? Math.floor((w - 20) / 4) : 0);
   const base = {
     x: START.x * CELL + CELL / 2,
     y: START.y * CELL + CELL / 2,
@@ -687,12 +707,24 @@ function spawnEnemy(type) {
 }
 
 // --- save / load ---
+function checkCornerBonus() {
+  if (cornerBonusTriggered) return;
+  const corners = [[0, 0], [COLS - 1, 0], [0, ROWS - 1], [COLS - 1, ROWS - 1]];
+  for (const [cx, cy] of corners) {
+    const t = towers.find(t => t.x === cx && t.y === cy);
+    if (!t || t.type !== 'aa' || t.level < 2) return;
+  }
+  cornerBonusTriggered = true;
+  money += 9999;
+  showMsg('🎰 ジャックポット！ 四隅対空ボーナス +$9999');
+}
 function saveGame() {
   if (gameEnded || paused) return;
   if (inWave || spawnQueue.length > 0 || enemies.length > 0) return;
   const data = {
-    v: 1, ts: Date.now(),
+    v: 2, ts: Date.now(),
     wave, money, lives, nextWaveTimer,
+    cornerBonus: cornerBonusTriggered,
     towers: towers.map(t => ({ x: t.x, y: t.y, type: t.type, level: t.level }))
   };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) {}
@@ -702,7 +734,7 @@ function loadSave() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const d = JSON.parse(raw);
-    if (!d || d.v !== 1) return null;
+    if (!d || (d.v !== 1 && d.v !== 2)) return null;
     if (typeof d.wave !== 'number' || typeof d.money !== 'number' || typeof d.lives !== 'number') return null;
     if (!Array.isArray(d.towers)) return null;
     return d;
@@ -725,6 +757,7 @@ function applySave(d) {
   spawnQueue = [];
   spawnTimer = 0;
   gameEnded = false;
+  cornerBonusTriggered = !!d.cornerBonus;
   nextWaveTimer = (typeof d.nextWaveTimer === 'number' ? d.nextWaveTimer : NEXT_WAVE_DELAY);
   selectedTower = null;
   selectedTowerType = 'pellet';
@@ -790,7 +823,7 @@ function update(dt) {
     spawnTimer -= dt;
     if (spawnTimer <= 0) {
       const next = spawnQueue.shift();
-      spawnEnemy(next.type);
+      spawnEnemy(next.type, next.wave);
       spawnTimer = next.delay;
     }
   }
@@ -1069,13 +1102,13 @@ function updateUI() {
     btn.textContent = '一時停止';
     btn.disabled = true;
   } else if (inWave) {
-    btn.textContent = '次のウェーブ召喚 (W' + (wave + 1) + ')';
+    btn.textContent = '▶ W' + (wave + 1) + ' 召喚';
     btn.disabled = false;
   } else if (nextWaveTimer > 0) {
-    btn.textContent = '次まで ' + Math.ceil(nextWaveTimer) + 's (今すぐ)';
+    btn.textContent = '▶ ' + Math.ceil(nextWaveTimer) + 's (今すぐ)';
     btn.disabled = false;
   } else {
-    btn.textContent = 'ウェーブ開始';
+    btn.textContent = '▶ ウェーブ開始';
     btn.disabled = false;
   }
   const sellBtn = document.getElementById('sell-btn');
@@ -1151,6 +1184,7 @@ function restartGame() {
   spawnTimer = 0;
   gameEnded = false;
   paused = false;
+  cornerBonusTriggered = false;
   nextWaveTimer = FIRST_WAVE_DELAY;
   selectedTower = null;
   selectedTowerType = 'pellet';
