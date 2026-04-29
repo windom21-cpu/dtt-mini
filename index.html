@@ -120,7 +120,15 @@
   .hiscores .empty { color: #888; text-align: center; padding: 8px; }
   #ui { width: 240px; flex-shrink: 0; overflow-y: auto; }
   h2 { margin: 0 0 12px 0; }
-  .stat { margin: 6px 0; font-size: 15px; }
+  .stat { margin: 6px 0; font-size: 15px; padding: 1px 4px; border-radius: 3px; }
+  .stat.damaged {
+    animation: livesPulse 0.6s ease-out;
+  }
+  @keyframes livesPulse {
+    0% { background: rgba(255, 0, 0, 0.7); color: #fff; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
+    40% { background: rgba(255, 80, 80, 0.5); color: #fff; }
+    100% { background: transparent; color: inherit; box-shadow: none; }
+  }
   .tower-btn {
     display: block;
     width: 100%;
@@ -645,9 +653,10 @@ function spawnEnemy(type, w) {
   const hp = Math.round(e.hp * computeHpScale(w));
   const speed = e.speed * computeSpeedMul(w);
   const reward = e.reward + (w > 20 ? Math.floor((w - 20) / 4) : 0);
+  const jitter = 18;
   const base = {
-    x: START.x * CELL + CELL / 2,
-    y: START.y * CELL + CELL / 2,
+    x: START.x * CELL + CELL / 2 + (Math.random() - 0.5) * jitter,
+    y: START.y * CELL + CELL / 2 + (Math.random() - 0.5) * jitter,
     hp, maxHp: hp,
     speed,
     color: e.color,
@@ -821,15 +830,18 @@ function update(dt) {
     }
   }
 
+  let livesLostThisFrame = 0;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     const reached = e.flying ? e.reachedGoal : (e.path && e.pathIndex >= e.path.length);
     if (reached) {
       enemies.splice(i, 1);
       lives--;
+      livesLostThisFrame++;
       if (lives <= 0) gameOver();
     }
   }
+  if (livesLostThisFrame > 0) flashLives(livesLostThisFrame);
 
   for (const t of towers) {
     t.cooldown -= dt;
@@ -1121,6 +1133,16 @@ function showMsg(text) {
   msgTimer = setTimeout(() => {
     document.getElementById('msg').textContent = '';
   }, 2200);
+}
+function flashLives(n) {
+  const livesEl = document.getElementById('lives');
+  if (!livesEl) return;
+  const stat = livesEl.closest('.stat');
+  if (!stat) return;
+  stat.classList.remove('damaged');
+  void stat.offsetWidth;
+  stat.classList.add('damaged');
+  if (n >= 2) showMsg('-' + n + ' ❤️');
 }
 
 function gameOver() {
