@@ -630,6 +630,31 @@ const BGM_GOLD = {
   ],
 };
 
+const BGM_BONUS = {
+  // ボーナス：陽気で速い、コインジャラジャラ感
+  bpm: 168, loop: 8,
+  tracks: [
+    { type: 'square', vol: 0.05, notes: [
+      // 跳ねるメロディ（C major）
+      {t:0, n:72, d:0.25}, {t:0.25, n:76, d:0.25}, {t:0.5, n:79, d:0.25}, {t:0.75, n:84, d:0.25},
+      {t:1, n:79, d:0.25}, {t:1.25, n:76, d:0.25}, {t:1.5, n:72, d:0.5},
+      {t:2, n:74, d:0.25}, {t:2.25, n:77, d:0.25}, {t:2.5, n:81, d:0.25}, {t:2.75, n:86, d:0.25},
+      {t:3, n:81, d:0.25}, {t:3.25, n:77, d:0.25}, {t:3.5, n:74, d:0.5},
+      {t:4, n:76, d:0.25}, {t:4.25, n:79, d:0.25}, {t:4.5, n:83, d:0.25}, {t:4.75, n:88, d:0.25},
+      {t:5, n:83, d:0.25}, {t:5.25, n:79, d:0.25}, {t:5.5, n:76, d:0.5},
+      {t:6, n:79, d:0.5}, {t:6.5, n:83, d:0.5},
+      {t:7, n:88, d:0.5}, {t:7.5, n:84, d:0.5},
+    ]},
+    { type: 'triangle', vol: 0.05, notes: [
+      // 跳ねるベース
+      {t:0, n:48, d:0.25}, {t:0.5, n:55, d:0.25}, {t:1, n:48, d:0.25}, {t:1.5, n:55, d:0.25},
+      {t:2, n:50, d:0.25}, {t:2.5, n:57, d:0.25}, {t:3, n:50, d:0.25}, {t:3.5, n:57, d:0.25},
+      {t:4, n:53, d:0.25}, {t:4.5, n:60, d:0.25}, {t:5, n:53, d:0.25}, {t:5.5, n:60, d:0.25},
+      {t:6, n:55, d:0.25}, {t:6.5, n:62, d:0.25}, {t:7, n:55, d:0.25}, {t:7.5, n:48, d:0.25},
+    ]},
+  ],
+};
+
 let bgmGain = null;
 let bgmCurrent = null;
 let bgmNextScheduleAt = 0;
@@ -717,8 +742,9 @@ function bgmForCurrentNode() {
   if (currentNodeIdx === BOSS_IDX) {
     return currentBossType() === 'silver' ? BGM_SILVER : BGM_GOLD;
   }
-  const SEASON_BGM = [BGM_SPRING, BGM_SUMMER, BGM_AUTUMN, BGM_WINTER];
-  return SEASON_BGM[Math.max(0, currentNodeIdx)];
+  // インデックス: 0春 / 1夏 / 2ボーナス / 3秋 / 4冬
+  const NODE_BGM = [BGM_SPRING, BGM_SUMMER, BGM_BONUS, BGM_AUTUMN, BGM_WINTER];
+  return NODE_BGM[Math.max(0, currentNodeIdx)];
 }
 
 // ============================================================
@@ -800,6 +826,7 @@ const BOSS_CONFIG = {
 };
 
 function isBossNode(idx) { return idx === BOSS_IDX; }
+function isBonusNode(idx) { return idx === BONUS_IDX; }
 
 function spawnBoss(type) {
   const c = BOSS_CONFIG[type];
@@ -1095,12 +1122,13 @@ let wideTimer = 0;
 // ブロック配置共通定数
 const BW = 60, BH = 22, GAP = 4;
 const START_Y = 60;
-// 各季節のブロックパレット（行ごとに使い分け）。ボスステージはブロック生成しないので不要
+// 各季節のブロックパレット（行ごとに使い分け）。ボス＆ボーナスでは使われない
 const SEASON_BLOCK_PALETTES = [
-  ['#ffb7c5', '#ffc6d3', '#ff9aae', '#ffaac0', '#ffc1d1', '#ffb0c5', '#ffa3b9', '#ff97ae'], // 春 桜
-  ['#7cd1ff', '#a3deff', '#56b6e6', '#3d9bd1', '#5fb8e3', '#88c8e8', '#4ba8d4', '#6ec1e6'], // 夏 海
-  ['#ff8a3a', '#ffa66b', '#e6671d', '#cc4f0a', '#ffb380', '#d96b1f', '#b85a17', '#ee7d2a'], // 秋 紅葉
-  ['#cae8ff', '#dfe9f5', '#aed0f0', '#92bce0', '#bcd9f0', '#9bc4e8', '#8eb6dc', '#a8c8e6'], // 冬 雪
+  ['#ffb7c5', '#ffc6d3', '#ff9aae', '#ffaac0', '#ffc1d1', '#ffb0c5', '#ffa3b9', '#ff97ae'], // 0 春
+  ['#7cd1ff', '#a3deff', '#56b6e6', '#3d9bd1', '#5fb8e3', '#88c8e8', '#4ba8d4', '#6ec1e6'], // 1 夏
+  ['#ffd86b', '#ffe06b', '#ffc94d', '#ffe89a', '#ffd86b', '#ffe06b', '#ffc94d', '#ffe89a'], // 2 ボーナス（プレースホルダー）
+  ['#ff8a3a', '#ffa66b', '#e6671d', '#cc4f0a', '#ffb380', '#d96b1f', '#b85a17', '#ee7d2a'], // 3 秋
+  ['#cae8ff', '#dfe9f5', '#aed0f0', '#92bce0', '#bcd9f0', '#9bc4e8', '#8eb6dc', '#a8c8e6'], // 4 冬
 ];
 
 // ============================================================
@@ -1108,9 +1136,13 @@ const SEASON_BLOCK_PALETTES = [
 // ============================================================
 const SCROLL_SPEED = 60; // px/sec
 const STAGE_DURATION = 30; // sec
-const STAGE_LENGTH = STAGE_DURATION * SCROLL_SPEED; // ピクセル
+const BONUS_DURATION = 15; // sec（ボーナスは半分）
+function currentStageLength() {
+  const dur = isBonusNode(currentNodeIdx) ? BONUS_DURATION : STAGE_DURATION;
+  return dur * SCROLL_SPEED;
+}
 const CHUNK_GAP = 90; // チャンク間の隙間
-let stageProgress = 0; // 0..STAGE_LENGTH
+let stageProgress = 0; // 0..currentStageLength()
 let nextChunkX = W + 40; // 次のチャンクの左端x（画面座標）
 let stageNum = 0;       // 開始時に startStage() で1にインクリメント
 
@@ -1124,19 +1156,21 @@ const PHASE_MAP_WAIT = 3;       // マップで START ボタン待ち
 let phase = PHASE_MAP_TRANSIT;  // 起動時はマップから開始
 let phaseTimer = 0;
 
-// 季節4 + ボス1 の 5 ノード構成。ボスは loopCount で銀/金が決まる。
+// 春-夏-ボーナス-秋-冬-ボス の 6 ノード構成。ボスは loopCount で銀/金が決まる。
 const SEASONS = [
-  { label: '春', emoji: '🌸', color: '#ffb7c5', bg: ['#ffeef3', '#ffd9e3'] },
-  { label: '夏', emoji: '☀️', color: '#ffd86b', bg: ['#bff0ff', '#7cc6e8'] },
-  { label: '秋', emoji: '🍁', color: '#ff8a3a', bg: ['#ffe0c0', '#ff9966'] },
-  { label: '冬', emoji: '❄️', color: '#cae8ff', bg: ['#eaf5ff', '#aac8e0'] },
+  { label: '春',       emoji: '🌸', color: '#ffb7c5', bg: ['#ffeef3', '#ffd9e3'] },
+  { label: '夏',       emoji: '☀️', color: '#ffd86b', bg: ['#bff0ff', '#7cc6e8'] },
+  { label: 'ボーナス', emoji: '💰', color: '#ffd86b', bg: ['#3a2a78', '#1a0e3a'] }, // 紫×金
+  { label: '秋',       emoji: '🍁', color: '#ff8a3a', bg: ['#ffe0c0', '#ff9966'] },
+  { label: '冬',       emoji: '❄️', color: '#cae8ff', bg: ['#eaf5ff', '#aac8e0'] },
 ];
 const BOSS_NODE = {
   silver: { label: '銀ボス', emoji: '🥈', color: '#cccccc', bg: ['#5a5a6a', '#2a2a35'] },
   gold:   { label: '金ボス', emoji: '🥇', color: '#ffd86b', bg: ['#5a4500', '#2a1f00'] },
 };
-const TOTAL_NODES = 5;
-const BOSS_IDX = 4;
+const TOTAL_NODES = 6;
+const BOSS_IDX = 5;
+const BONUS_IDX = 2;
 let loopCount = 1;        // 1巡目=銀, 2巡目=金, 3巡目=銀...
 let currentNodeIdx = -1;  // 起動時はマップ外
 let nextNodeIdx = 0;
@@ -1308,7 +1342,34 @@ const CHUNKS = [
   chunkZakoFort, chunkZakoLine, chunkBandsGap,
 ];
 
+// ----- ボーナス面用：コイン敷き詰めチャンク -----
+const COIN_W = 32, COIN_H = 26, COIN_GAP = 2;
+function chunkCoinDense(baseX) {
+  const cols = 14, rows = 9;
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      blocks.push({
+        x: baseX + c * (COIN_W + COIN_GAP) + COIN_W / 2,
+        y: START_Y + r * (COIN_H + COIN_GAP) + COIN_H / 2,
+        w: COIN_W,
+        h: COIN_H,
+        hp: 1,
+        maxHp: 1,
+        color: '#ffd86b',
+        hitFlash: 0,
+        bonus: true,
+      });
+    }
+  }
+  return cols * (COIN_W + COIN_GAP) - COIN_GAP;
+}
+
 function spawnNextChunk() {
+  if (isBonusNode(currentNodeIdx)) {
+    const w = chunkCoinDense(nextChunkX);
+    nextChunkX += w + 12; // 隙間も狭く
+    return;
+  }
   const fn = CHUNKS[Math.floor(Math.random() * CHUNKS.length)];
   const w = fn(nextChunkX);
   nextChunkX += w + CHUNK_GAP;
@@ -1955,16 +2016,16 @@ function update(dt) {
       }
     } else {
       const scroll = SCROLL_SPEED * dt;
-      if (stageProgress < STAGE_LENGTH) {
+      if (stageProgress < currentStageLength()) {
         stageProgress += scroll;
-        if (stageProgress > STAGE_LENGTH) stageProgress = STAGE_LENGTH;
+        if (stageProgress > currentStageLength()) stageProgress = currentStageLength();
       }
       for (const b of blocks) b.x -= scroll;
       for (const z of zakos) z.x -= scroll;
       for (const it of items) { it.x -= scroll; it.bobPhase += dt * 4; }
       nextChunkX -= scroll;
 
-      if (stageProgress < STAGE_LENGTH && nextChunkX < W) {
+      if (stageProgress < currentStageLength() && nextChunkX < W) {
         spawnNextChunk();
       }
 
@@ -1979,8 +2040,8 @@ function update(dt) {
       }
 
       // ステージクリア判定 → クリアバナー
-      if (stageProgress >= STAGE_LENGTH && blocks.length === 0 && zakos.length === 0) {
-        const reward = 30;
+      if (stageProgress >= currentStageLength() && blocks.length === 0 && zakos.length === 0) {
+        const reward = isBonusNode(currentNodeIdx) ? 100 : 30;
         coins += reward;
         phase = PHASE_CLEAR_BANNER;
         phaseTimer = BANNER_DURATION;
@@ -2092,15 +2153,17 @@ function update(dt) {
         blk.hp--;
         blk.hitFlash = 1;
         if (blk.hp <= 0) {
-          maybeDropItem(blk.x, blk.y, ITEM_DROP_BLOCK);
+          // ボーナスタイルはアイテム無し、報酬2倍ベース、コイン音
+          if (!blk.bonus) maybeDropItem(blk.x, blk.y, ITEM_DROP_BLOCK);
           blocks.splice(j, 1);
           b.combo++;
-          const gain = comboReward(1, b.combo);
+          const base = blk.bonus ? 2 : 1;
+          const gain = comboReward(base, b.combo);
           coins += gain;
           score += gain;
           if (b.combo > comboBest) comboBest = b.combo;
           if (b.combo >= 3) showMsg(`${b.combo} COMBO! +${gain}`);
-          SE.break();
+          if (blk.bonus) SE.item(); else SE.break();
         } else {
           SE.hit();
         }
@@ -2237,8 +2300,40 @@ function draw() {
   // 季節パーティクル（背景の上、ブロックの下）
   for (const p of particles) drawParticle(p);
 
-  // ブロック
+  // ブロック / コインタイル
   for (const blk of blocks) {
+    if (blk.bonus) {
+      // コイン（金色の円）
+      const cx = blk.x, cy = blk.y;
+      const r = Math.min(blk.w, blk.h) / 2 - 1;
+      // 内側の明るい色
+      const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.2, cx, cy, r);
+      grad.addColorStop(0, '#fff7c0');
+      grad.addColorStop(0.5, '#ffd86b');
+      grad.addColorStop(1, '#c19926');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      // 縁
+      ctx.strokeStyle = '#a87a14';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // $ 記号
+      ctx.fillStyle = '#7a5510';
+      ctx.font = 'bold 13px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$', cx, cy + 1);
+      // ヒットフラッシュ
+      if (blk.hitFlash > 0) {
+        ctx.fillStyle = `rgba(255,255,255,${blk.hitFlash * 0.7})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      continue;
+    }
     const x = blk.x - blk.w / 2;
     const y = blk.y - blk.h / 2;
     ctx.fillStyle = blk.color;
@@ -2357,8 +2452,14 @@ function drawClearBanner() {
   ctx.fillStyle = '#5a3a1f';
   const reward = isBossNode(currentNodeIdx)
     ? BOSS_CONFIG[currentBossType()].reward
-    : 30;
+    : isBonusNode(currentNodeIdx) ? 100 : 30;
   ctx.fillText(`+${reward} コイン`, 0, 38);
+  // ボーナスステージはおまけ表示
+  if (isBonusNode(currentNodeIdx)) {
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillStyle = '#a87a14';
+    ctx.fillText('💰 ボーナス！稼げたかな？', 0, 70);
+  }
   // 2巡目（金）ボス撃破時は GAME COMPLETE
   if (isBossNode(currentNodeIdx) && currentBossType() === 'gold') {
     ctx.font = 'bold 18px system-ui, sans-serif';
@@ -2719,7 +2820,7 @@ function drawStageBar() {
   const bx = 20, by = 8;
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.fillRect(bx, by, barW, barH);
-  const ratio = stageProgress / STAGE_LENGTH;
+  const ratio = stageProgress / currentStageLength();
   ctx.fillStyle = '#7cf585';
   ctx.fillRect(bx, by, barW * ratio, barH);
   ctx.strokeStyle = 'rgba(0,0,0,0.25)';
