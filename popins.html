@@ -217,6 +217,49 @@
   }
   .hiscore-section li { margin: 3px 0; }
   .hiscore-section li.empty { list-style: none; opacity: 0.5; text-align: center; padding-left: 0; }
+  .skin-section {
+    margin: 10px 0 14px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+  }
+  .skin-section h3 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    opacity: 0.8;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .skin-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .skin-item {
+    width: 44px;
+    height: 36px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background: #2a3148;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    padding: 0;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  .skin-item.selected { border-color: #ffd86b; background: #3a4258; }
+  .skin-item.locked { opacity: 0.35; cursor: not-allowed; }
+  .skin-name {
+    text-align: center;
+    font-size: 11px;
+    margin-top: 4px;
+    opacity: 0.8;
+    min-height: 14px;
+  }
   .hidden { display: none !important; }
   /* 狭い画面ではヘルプテキストを隠してフォントを縮小 */
   @media (max-width: 600px) {
@@ -261,6 +304,11 @@
     <div class="hiscore-section">
       <h3>🏆 ハイスコア（ベスト5）</h3>
       <ol id="hiscore-list"></ol>
+    </div>
+    <div class="skin-section">
+      <h3>🌂 傘を選ぶ</h3>
+      <div class="skin-grid" id="skin-grid"></div>
+      <div class="skin-name" id="skin-name"></div>
     </div>
     <button id="title-resume-btn" class="hidden">📂 続きから</button>
     <button id="title-start-btn">▶ 始める</button>
@@ -1582,6 +1630,46 @@ function launchBall() {
 // ============================================================
 const SAVE_KEY = 'popins-save';
 const HISCORE_KEY = 'popins-hiscores';
+const SKIN_KEY = 'popins-skin';
+const SKIN_UNLOCKED_KEY = 'popins-skins-unlocked';
+
+// ----- 傘スキン定義 -----
+const SKINS = [
+  { name: 'クラシック',   dome: '#e63946', frame: '#ffd86b', pattern: 'solid' },
+  { name: 'オーシャン',   dome: '#3aa0ff', frame: '#fff',    pattern: 'solid' },
+  { name: 'チェリー',     dome: '#ff7aa3', frame: '#ffd86b', pattern: 'solid' },
+  { name: 'サンシャイン', dome: '#ffd86b', frame: '#ff7d2a', pattern: 'solid' },
+  { name: 'フォレスト',   dome: '#3ad97c', frame: '#1a6e3a', pattern: 'solid' },
+  { name: 'ロイヤル',     dome: '#7b3aff', frame: '#ffd86b', pattern: 'solid' },
+  { name: 'ストライプ',   dome: '#e63946', frame: '#ffffff', pattern: 'stripes' },
+  { name: 'ドット',       dome: '#ffffff', frame: '#222',    pattern: 'dots',     dotColor: '#e63946' },
+  { name: 'レインボー',   dome: 'rainbow', frame: '#ffffff', pattern: 'gradient' },
+  { name: 'ステルス',     dome: '#1a1a1a', frame: '#c0c0c8', pattern: 'solid' },
+];
+
+let selectedSkinId = (function() {
+  const v = parseInt(localStorage.getItem(SKIN_KEY) || '0', 10);
+  return isNaN(v) ? 0 : Math.max(0, Math.min(SKINS.length - 1, v));
+})();
+let unlockedSkins = (function() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(SKIN_UNLOCKED_KEY) || '[0]');
+    return Array.isArray(arr) ? arr : [0];
+  } catch (e) { return [0]; }
+})();
+function getSkin() { return SKINS[selectedSkinId] || SKINS[0]; }
+function selectSkin(id) {
+  if (!unlockedSkins.includes(id)) return;
+  selectedSkinId = id;
+  try { localStorage.setItem(SKIN_KEY, String(id)); } catch (e) {}
+}
+function maybeUnlockNextSkin() {
+  if (unlockedSkins.length >= SKINS.length) return null;
+  const nextId = unlockedSkins.length;
+  unlockedSkins.push(nextId);
+  try { localStorage.setItem(SKIN_UNLOCKED_KEY, JSON.stringify(unlockedSkins)); } catch (e) {}
+  return nextId;
+}
 const SAVE_VERSION = 1;
 
 function saveGame() {
@@ -1630,9 +1718,85 @@ function renderHiscoreList() {
   }
 }
 
+function drawSkinPreview(canvas, skin) {
+  const c = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const cx = w / 2, cy = h - 4;
+  const R = Math.min(w * 0.4, h * 0.7);
+  c.clearRect(0, 0, w, h);
+  // ドーム塗り（クリップ）
+  c.save();
+  c.beginPath();
+  c.moveTo(cx - R, cy);
+  c.arc(cx, cy, R, Math.PI, 0, false);
+  c.closePath();
+  c.clip();
+  if (skin.pattern === 'stripes') {
+    const ns = 8, sw = (R * 2) / ns;
+    for (let i = 0; i < ns; i++) {
+      c.fillStyle = i % 2 === 0 ? skin.dome : skin.frame;
+      c.fillRect(cx - R + i * sw, cy - R, sw, R);
+    }
+  } else if (skin.pattern === 'dots') {
+    c.fillStyle = skin.dome;
+    c.fillRect(cx - R, cy - R, R * 2, R);
+    c.fillStyle = skin.dotColor;
+    for (let dy = cy - R + 4; dy < cy; dy += 6) {
+      for (let dx = cx - R + 4; dx < cx + R; dx += 6) {
+        c.beginPath(); c.arc(dx, dy, 1.2, 0, Math.PI * 2); c.fill();
+      }
+    }
+  } else if (skin.pattern === 'gradient') {
+    const g = c.createLinearGradient(cx - R, 0, cx + R, 0);
+    g.addColorStop(0, '#ff3a3a'); g.addColorStop(0.33, '#ffd86b');
+    g.addColorStop(0.66, '#3aa0ff'); g.addColorStop(1, '#ff3aaa');
+    c.fillStyle = g;
+    c.fillRect(cx - R, cy - R, R * 2, R);
+  } else {
+    c.fillStyle = skin.dome;
+    c.fillRect(cx - R, cy - R, R * 2, R);
+  }
+  c.restore();
+  // 縁
+  c.strokeStyle = skin.frame;
+  c.lineWidth = 1.5;
+  c.beginPath();
+  c.arc(cx, cy, R, Math.PI, 0, false);
+  c.stroke();
+}
+
+function renderSkinGrid() {
+  const grid = document.getElementById('skin-grid');
+  const nameEl = document.getElementById('skin-name');
+  grid.innerHTML = '';
+  SKINS.forEach((skin, i) => {
+    const item = document.createElement('button');
+    item.className = 'skin-item';
+    if (selectedSkinId === i) item.classList.add('selected');
+    const unlocked = unlockedSkins.includes(i);
+    if (!unlocked) {
+      item.classList.add('locked');
+      item.textContent = '🔒';
+    } else {
+      const cv = document.createElement('canvas');
+      cv.width = 40; cv.height = 28;
+      item.appendChild(cv);
+      drawSkinPreview(cv, skin);
+    }
+    bindButton(item, () => {
+      if (!unlockedSkins.includes(i)) return;
+      selectSkin(i);
+      renderSkinGrid();
+    });
+    grid.appendChild(item);
+  });
+  nameEl.textContent = `現在: ${SKINS[selectedSkinId].name}（解放 ${unlockedSkins.length}/${SKINS.length}）`;
+}
+
 function showTitle() {
   paused = true;
   renderHiscoreList();
+  renderSkinGrid();
   const save = loadSave();
   elTitleResumeBtn.classList.toggle('hidden', !save);
   elTitleOverlay.classList.remove('hidden');
@@ -1822,6 +1986,8 @@ function update(dt) {
         phaseTimer = BANNER_DURATION;
         SE.clear();
         stopBgm(0.4);
+        const newSkin = maybeUnlockNextSkin();
+        if (newSkin !== null) showMsg(`🌂 新スキン「${SKINS[newSkin].name}」ゲット!`);
       }
     }
 
@@ -1989,6 +2155,10 @@ function update(dt) {
             boss = null;
             SE.bossWin();
             stopBgm(0.5);
+            const newSkin = maybeUnlockNextSkin();
+            if (newSkin !== null) {
+              setTimeout(() => showMsg(`🌂 新スキン「${SKINS[newSkin].name}」ゲット!`), 1200);
+            }
           } else {
             SE.bossHit();
           }
@@ -2348,6 +2518,7 @@ function isInStartButton(x, y) {
 }
 
 function drawUmbrellaIcon(x, y) {
+  const skin = getSkin();
   ctx.save();
   ctx.translate(x, y);
   // 影
@@ -2355,15 +2526,10 @@ function drawUmbrellaIcon(x, y) {
   ctx.beginPath();
   ctx.ellipse(0, 16, 14, 3, 0, 0, Math.PI * 2);
   ctx.fill();
-  // ドーム
+  // ドーム（スキン）
   const R = 16;
-  ctx.fillStyle = '#e63946';
-  ctx.beginPath();
-  ctx.moveTo(-R, 0);
-  ctx.arc(0, 0, R, Math.PI, 0, false);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = '#ffd86b';
+  fillSkinDome(R, skin);
+  ctx.strokeStyle = skin.frame;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(0, 0, R, Math.PI, 0, false);
@@ -2382,18 +2548,65 @@ function drawUmbrellaIcon(x, y) {
   ctx.restore();
 }
 
+function fillSkinDome(R, skin) {
+  // 上半円にクリップしてからパターン塗り
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(-R, 0);
+  ctx.arc(0, 0, R, Math.PI, 0, false);
+  ctx.closePath();
+  ctx.clip();
+  if (skin.pattern === 'stripes') {
+    const ns = 8;
+    const sw = (R * 2) / ns;
+    for (let i = 0; i < ns; i++) {
+      ctx.fillStyle = i % 2 === 0 ? skin.dome : skin.frame;
+      ctx.fillRect(-R + i * sw, -R, sw, R);
+    }
+  } else if (skin.pattern === 'dots') {
+    ctx.fillStyle = skin.dome;
+    ctx.fillRect(-R, -R, R * 2, R);
+    ctx.fillStyle = skin.dotColor || '#e63946';
+    const step = Math.max(8, R * 0.22);
+    for (let dy = -R + step / 2; dy < 0; dy += step) {
+      for (let dx = -R + step / 2; dx < R; dx += step) {
+        ctx.beginPath();
+        ctx.arc(dx, dy, step * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  } else if (skin.pattern === 'gradient') {
+    const g = ctx.createLinearGradient(-R, 0, R, 0);
+    g.addColorStop(0,    '#ff3a3a');
+    g.addColorStop(0.16, '#ff9c2a');
+    g.addColorStop(0.33, '#ffd86b');
+    g.addColorStop(0.5,  '#7cf585');
+    g.addColorStop(0.66, '#3aa0ff');
+    g.addColorStop(0.83, '#7b3aff');
+    g.addColorStop(1,    '#ff3aaa');
+    ctx.fillStyle = g;
+    ctx.fillRect(-R, -R, R * 2, R);
+  } else {
+    // solid
+    ctx.fillStyle = skin.dome;
+    ctx.fillRect(-R, -R, R * 2, R);
+  }
+  ctx.restore();
+}
+
 function drawUmbrella(x, y) {
+  const skin = getSkin();
   ctx.save();
   ctx.translate(x, y);
   const R = umbrella.halfW;
 
-  // 影（地面方向）
+  // 影
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
   ctx.ellipse(2, 8, R * 0.95, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // 持ち手（先に描いてドームを上に重ねる）
+  // 持ち手
   ctx.strokeStyle = '#5a3a1f';
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
@@ -2405,23 +2618,18 @@ function drawUmbrella(x, y) {
   ctx.arc(-3, 16, 3, 0, Math.PI, true);
   ctx.stroke();
 
-  // ドーム本体（赤）
-  ctx.fillStyle = '#e63946';
-  ctx.beginPath();
-  ctx.moveTo(-R, 0);
-  ctx.arc(0, 0, R, Math.PI, 0, false);
-  ctx.closePath();
-  ctx.fill();
+  // ドーム本体（スキン別パターン）
+  fillSkinDome(R, skin);
 
-  // ドームの縁を太く強調 = ここが跳ね返り面
-  ctx.strokeStyle = '#ffd86b';
+  // ドームの縁
+  ctx.strokeStyle = skin.frame;
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.arc(0, 0, R, Math.PI, 0, false);
   ctx.stroke();
 
-  // 内側に薄い縁取り（立体感）
+  // 内側薄縁
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -2429,7 +2637,7 @@ function drawUmbrella(x, y) {
   ctx.stroke();
 
   // 傘の骨
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
   ctx.lineWidth = 1;
   for (let i = 1; i < 5; i++) {
     const a = Math.PI - (i / 5) * Math.PI;
@@ -2440,12 +2648,12 @@ function drawUmbrella(x, y) {
   }
 
   // 中央のキャップ
-  ctx.fillStyle = '#ffd86b';
+  ctx.fillStyle = skin.frame;
   ctx.beginPath();
   ctx.arc(0, 0, 3, 0, Math.PI * 2);
   ctx.fill();
 
-  // 「下半分は無効」を視覚化：ドーム下にうっすらラインを引く
+  // 下ライン（跳ね返り面の境界）
   ctx.strokeStyle = 'rgba(0,0,0,0.15)';
   ctx.lineWidth = 1;
   ctx.beginPath();
