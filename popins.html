@@ -239,7 +239,7 @@
     <div class="stat">📊 <span class="v" id="score">0</span></div>
     <div class="stat">🔥 <span class="v" id="combo-best">0</span></div>
     <button id="mute-btn" class="stat-btn" title="音のオン/オフ">🔊</button>
-    <div id="help">PC: マウス＋クリック / タッチ: 下のバーをスライド＋タップ</div>
+    <div id="help">PC: マウス＋クリック / タッチ: 画面ドラッグ＋タップ</div>
   </div>
   <div id="canvas-wrap">
     <canvas id="canvas"></canvas>
@@ -716,17 +716,14 @@ const CONTINUE_COST = 100;
 const CONTINUE_BALLS = 10;
 const INITIAL_BALLS = 10;
 
-// タッチ操作用ストリップ（下部）
-const STRIP_HEIGHT = 60;
-const STRIP_TOP = H - STRIP_HEIGHT;  // 480
 const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
 const umbrella = {
   x: W / 2,
-  y: STRIP_TOP - 40,   // ストリップの少し上
-  baseHalfW: 50,
-  halfW: 50,
-  h: 16,
+  y: H - 50,           // 画面下端から少し上
+  baseHalfW: 65,        // 大きめ（指で隠れにくく）
+  halfW: 65,
+  h: 18,
 };
 
 const balls = []; // { x, y, vx, vy, r, combo }
@@ -1441,7 +1438,6 @@ function handleTap(x, y) {
 // ----- タッチ操作（タブレット/スマホ） -----
 // ストリップ起点のドラッグ=傘移動、タップ=発射（指で傘が隠れない設計）
 let touchStartX = null, touchStartY = null, touchMoved = false, activeTouchId = null;
-let touchStartedInStrip = false;
 let touchStartClientX = null, touchStartClientY = null;
 const TAP_THRESHOLD_CSS = 16; // CSS pixels（端末解像度に依存しない）
 
@@ -1456,11 +1452,8 @@ cv.addEventListener('touchstart', (e) => {
   touchStartClientX = t.clientX;
   touchStartClientY = t.clientY;
   touchMoved = false;
-  // ストリップ内で開始したら傘ドラッグモード
-  touchStartedInStrip = (p.y >= STRIP_TOP);
-  if (touchStartedInStrip) {
-    umbrella.x = clamp(p.x, umbrella.halfW, W - umbrella.halfW);
-  }
+  // 画面どこでも傘が指のX位置に追従
+  umbrella.x = clamp(p.x, umbrella.halfW, W - umbrella.halfW);
 }, { passive: false });
 
 cv.addEventListener('touchmove', (e) => {
@@ -1468,16 +1461,12 @@ cv.addEventListener('touchmove', (e) => {
   for (const t of e.changedTouches) {
     if (t.identifier !== activeTouchId) continue;
     const p = pointerToWorld(t.clientX, t.clientY);
-    // CSS px 基準で判定（小画面でも安定）
     const dxCss = t.clientX - touchStartClientX;
     const dyCss = t.clientY - touchStartClientY;
     if (Math.hypot(dxCss, dyCss) > TAP_THRESHOLD_CSS) {
       touchMoved = true;
     }
-    // ストリップ起点のときだけ傘ドラッグ
-    if (touchStartedInStrip) {
-      umbrella.x = clamp(p.x, umbrella.halfW, W - umbrella.halfW);
-    }
+    umbrella.x = clamp(p.x, umbrella.halfW, W - umbrella.halfW);
   }
 }, { passive: false });
 
@@ -1881,7 +1870,7 @@ function update(dt) {
     if (b.y - b.r < 0) { b.y = b.r; b.vy = -b.vy; }
 
     // 下から消滅
-    if (b.y - b.r > STRIP_TOP) {
+    if (b.y - b.r > H) {
       balls.splice(i, 1);
       continue;
     }
@@ -2151,60 +2140,12 @@ function draw() {
     ctx.fill();
   }
 
-  // タッチ操作ストリップ（プレイ中のみ表示。マップ/バナー中は不要）
-  if (phase === PHASE_PLAYING) drawTouchStrip();
-
   // フェーズ別オーバーレイ
   if (phase === PHASE_CLEAR_BANNER) {
     drawClearBanner();
   } else if (phase === PHASE_MAP_TRANSIT || phase === PHASE_MAP_WAIT) {
     drawWorldMap();
   }
-}
-
-function drawTouchStrip() {
-  // 背景グラデ
-  const grad = ctx.createLinearGradient(0, STRIP_TOP, 0, H);
-  grad.addColorStop(0, 'rgba(15,20,40,0.55)');
-  grad.addColorStop(1, 'rgba(5,10,25,0.85)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, STRIP_TOP, W, STRIP_HEIGHT);
-  // 上端の黄色線（仕切り）
-  ctx.strokeStyle = 'rgba(255,216,107,0.7)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(0, STRIP_TOP);
-  ctx.lineTo(W, STRIP_TOP);
-  ctx.stroke();
-  // 上端のドット模様（操作ゾーン感）
-  ctx.fillStyle = 'rgba(255,216,107,0.35)';
-  for (let x = 6; x < W; x += 14) {
-    ctx.fillRect(x, STRIP_TOP + 4, 6, 1);
-  }
-  // ヒント文字（タッチデバイスのみ強調）
-  ctx.fillStyle = isTouchDevice ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)';
-  ctx.font = 'bold 14px system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('← スライドで傘を動かす  /  タップで発射 →', W / 2, STRIP_TOP + STRIP_HEIGHT / 2 + 8);
-  // 傘の現在位置インジケータ（黄色のスライダー）
-  const cy = STRIP_TOP + 18;
-  ctx.fillStyle = 'rgba(255,216,107,0.85)';
-  ctx.beginPath();
-  ctx.arc(umbrella.x, cy, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  // インジケータから傘へのライン（位置対応を視覚化）
-  ctx.strokeStyle = 'rgba(255,216,107,0.25)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([3, 4]);
-  ctx.beginPath();
-  ctx.moveTo(umbrella.x, cy);
-  ctx.lineTo(umbrella.x, umbrella.y - umbrella.halfW);
-  ctx.stroke();
-  ctx.setLineDash([]);
 }
 
 function drawClearBanner() {
