@@ -31,6 +31,14 @@
     100% { transform: scale(1) translateX(0);      color: #fff; }
   }
   #score.punch { display: inline-block; animation: scorePunch .45s ease-out; }
+  #version {
+    position: absolute; right: 8px; bottom: 6px;
+    font-size: 11px; font-family: ui-monospace, Menlo, Consolas, monospace;
+    color: rgba(255,255,255,0.45);
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    pointer-events: none; user-select: none;
+    letter-spacing: .5px;
+  }
   #overlay {
     position: absolute; inset: 0;
     display: flex; flex-direction: column;
@@ -67,6 +75,7 @@
     <div>スコア: <span id="score">0</span> &nbsp;/&nbsp; ハイ: <span id="hiscore">0</span></div>
     <div>残り: <span id="time">30</span>秒</div>
   </div>
+  <div id="version">v1.0.0</div>
   <div id="overlay">
     <h1 id="title">的当てゲーム</h1>
     <p id="desc">右から流れてくる的をクリック / タップで撃ち落とそう!<br>制限時間は30秒。</p>
