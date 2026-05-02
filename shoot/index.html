@@ -113,7 +113,11 @@
 
   function spawnTarget() {
     const r = 20 + Math.random() * 28;
-    const y = r + Math.random() * (H - r * 2);
+    const topPad = 56;
+    const bottomPad = 72;
+    const minY = r + topPad;
+    const maxY = H - r - bottomPad;
+    const y = maxY > minY ? minY + Math.random() * (maxY - minY) : H / 2;
     const speed = 80 + Math.random() * 140 + (30 - timeLeft) * 4;
     const hue = Math.floor(Math.random() * 360);
     targets.push({ x: W + r, y, r, vx: -speed, hue, alive: true });
