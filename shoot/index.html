@@ -121,7 +121,8 @@
       const t = targets[i];
       if (!t.alive) continue;
       const dx = x - t.x, dy = y - t.y;
-      if (dx * dx + dy * dy <= t.r * t.r) {
+      const hitR = t.r + 18;
+      if (dx * dx + dy * dy <= hitR * hitR) {
         t.alive = false;
         spawnParticles(t.x, t.y, t.hue);
         score += Math.max(1, Math.round(50 / t.r * 10));
