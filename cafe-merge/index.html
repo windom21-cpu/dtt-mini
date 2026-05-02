@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>カフェマージ</title>
+<style>
+  :root {
+    --bg: #2C1810;
+    --bg2: #3D2817;
+    --panel: #4A2F1F;
+    --accent: #D4A574;
+    --accent2: #F2C796;
+    --text: #F4E8D8;
+    --muted: rgba(244, 232, 216, 0.55);
+    --cell-bg: rgba(244, 232, 216, 0.06);
+    --cell-border: rgba(212, 165, 116, 0.3);
+    --danger: #E07A5F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: linear-gradient(180deg, #2C1810 0%, #1A0E08 100%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+  button { font-family: inherit; }
+
+  #version {
+    position: fixed;
+    bottom: 4px;
+    right: 8px;
+    font-size: 10px;
+    color: rgba(244, 232, 216, 0.4);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Title */
+  #title-screen {
+    text-align: center;
+    padding: 32px 20px;
+    width: 100%;
+    max-width: 480px;
+  }
+  #title-screen h1 {
+    font-size: clamp(32px, 8vw, 56px);
+    color: var(--accent);
+    margin: 12px 0 6px;
+    letter-spacing: 0.08em;
+    text-shadow: 0 2px 12px rgba(212, 165, 116, 0.3);
+  }
+  #title-screen .subtitle {
+    font-size: 13px;
+    margin-bottom: 24px;
+    opacity: 0.75;
+    line-height: 1.6;
+  }
+  #title-icon {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto;
+  }
+  .btn {
+    padding: 14px 36px;
+    font-size: 17px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 6px;
+    box-shadow: 0 4px 0 #A07A4A;
+    transition: transform 0.05s, box-shadow 0.05s;
+  }
+  .btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #A07A4A;
+  }
+  .btn.secondary {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 4px 0 #2A1810;
+  }
+  .btn.secondary:active { box-shadow: 0 2px 0 #2A1810; }
+
+  #rules {
+    text-align: left;
+    background: rgba(74, 47, 31, 0.5);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 18px 0 24px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  #rules b { color: var(--accent); font-weight: 600; }
+
+  /* Game */
+  #game-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    max-width: 560px;
+    gap: 10px;
+  }
+
+  #header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    width: 100%;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 8px 4px;
+  }
+  #header > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #header .label { font-size: 10px; opacity: 0.6; letter-spacing: 0.05em; }
+  #header .value { font-size: 18px; font-weight: bold; color: var(--accent); }
+  #header .turns.low { color: var(--danger); animation: blink 0.6s infinite alternate; }
+  @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
+
+  #mission {
+    width: 100%;
+    background: var(--panel);
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid var(--cell-border);
+  }
+  #mission .label { font-size: 10px; opacity: 0.6; margin-bottom: 4px; letter-spacing: 0.1em; }
+  #mission .text { font-size: 15px; font-weight: bold; }
+  #mission .text .target { color: var(--accent2); }
+
+  .lane-wrap {
+    width: 100%;
+    position: relative;
+  }
+  .lane-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 0 6px 4px;
+  }
+  #lane {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+  }
+  .cell {
+    flex: 1;
+    aspect-ratio: 1;
+    background: var(--cell-bg);
+    border: 1px dashed var(--cell-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: transform 0.15s;
+  }
+  .cell.merged { animation: pulse 0.35s ease-out; }
+  @keyframes pulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    40% { transform: scale(1.18); filter: brightness(1.4); }
+    100% { transform: scale(1); filter: brightness(1); }
+  }
+  .cell.entered { animation: enter 0.25s ease-out; }
+  @keyframes enter {
+    from { transform: translateX(20%); opacity: 0.4; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .cell svg { width: 92%; height: 92%; }
+
+  #queue-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+  }
+  .slot {
+    width: 76px;
+    height: 76px;
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .slot .label {
+    position: absolute;
+    top: 3px;
+    font-size: 9px;
+    opacity: 0.6;
+    letter-spacing: 0.1em;
+  }
+  .slot.preview {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 12px rgba(212, 165, 116, 0.3);
+  }
+  .slot.disabled { opacity: 0.4; }
+  .slot svg { width: 75%; height: 75%; }
+  .arrow {
+    font-size: 22px;
+    color: var(--accent);
+    opacity: 0.7;
+  }
+
+  #controls {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+  .ctrl {
+    flex: 1;
+    padding: 16px 8px;
+    font-size: 16px;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--cell-border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 3px 0 #2A1810;
+    transition: transform 0.05s, box-shadow 0.05s;
+  }
+  .ctrl:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #2A1810;
+  }
+  .ctrl.primary {
+    background: var(--accent);
+    color: var(--bg);
+    flex: 2;
+    box-shadow: 0 3px 0 #A07A4A;
+  }
+  .ctrl.primary:active { box-shadow: 0 1px 0 #A07A4A; }
+  .ctrl:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  /* Overlay */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+    animation: fadein 0.2s;
+  }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .overlay h2 {
+    font-size: 30px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .overlay p {
+    margin-bottom: 22px;
+    font-size: 15px;
+    text-align: center;
+    line-height: 1.6;
+    max-width: 320px;
+  }
+  .overlay .achieved {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  @media (min-width: 600px) {
+    .cell svg, .slot svg { /* PC: a touch larger feel */ }
+  }
+</style>
+</head>
+<body>
+
+<div id="version">v1.0.0 / build 2026-05-03-01</div>
+
+<div id="title-screen">
+  <div id="title-icon"></div>
+  <h1>カフェマージ</h1>
+  <div class="subtitle">同じドリンクをくっつけて<br>お題のドリンクを作ろう</div>
+  <div id="rules">
+    <b>遊び方</b><br>
+    ・ <b>スライド</b>でドリンクをレーンの奥へ送る<br>
+    ・ 同じドリンクが隣り合うと <b>合体</b> して上のランクに<br>
+    ・ お題のドリンクを指定回数 <b>ターン内</b> に作ればクリア<br>
+    ・ <b>HOLD</b> でドリンクを 1 つ温存できる(1ターン1回)<br>
+    ・ レーンが詰まる / ターン切れで終了
+  </div>
+  <button id="start-btn" class="btn">スタート</button>
+</div>
+
+<div id="game-screen" hidden>
+  <div id="header">
+    <div><div class="label">STAGE</div><div class="value" id="stage-num">1</div></div>
+    <div><div class="label">残りターン</div><div class="value turns" id="turns">15</div></div>
+    <div><div class="label">進捗</div><div class="value" id="progress">0/1</div></div>
+  </div>
+
+  <div id="mission">
+    <div class="label">お題</div>
+    <div class="text" id="mission-text"></div>
+  </div>
+
+  <div class="lane-wrap">
+    <div class="lane-axis"><span>← 奥</span><span>手前 →</span></div>
+    <div id="lane"></div>
+  </div>
+
+  <div id="queue-row">
+    <div class="slot" id="hold-slot"><div class="label">HOLD</div></div>
+    <div class="arrow">⇄</div>
+    <div class="slot preview" id="preview-slot"><div class="label">NEXT</div></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl" id="hold-btn">HOLD</button>
+    <button class="ctrl primary" id="slide-btn">▶ スライド</button>
+  </div>
+</div>
+
+<script>
+// ===== Version =====
+const VERSION = 'v1.0.0';
+const BUILD   = '2026-05-03-01';
+console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
+
+// ===== Constants =====
+const LANE_SIZE = 7;
+const MAX_LEVEL = 8;
+
+const DRINKS = [
+  null,
+  { name: 'エスプレッソ' },
+  { name: 'ドリップコーヒー' },
+  { name: 'カフェラテ' },
+  { name: 'カプチーノ' },
+  { name: 'アイスティー' },
+  { name: 'アイスカフェモカ' },
+  { name: 'フラペチーノ' },
+  { name: 'メガパフェドリンク' },
+];
+
+const STAGES = [
+  { target: 3, count: 1, turns: 14 },
+  { target: 4, count: 1, turns: 16 },
+  { target: 4, count: 2, turns: 20 },
+  { target: 5, count: 1, turns: 20 },
+  { target: 5, count: 2, turns: 24 },
+  { target: 6, count: 1, turns: 26 },
+  { target: 6, count: 2, turns: 32 },
+  { target: 7, count: 1, turns: 34 },
+  { target: 8, count: 1, turns: 44 },
+];
+
+// ===== SVG drinks =====
+function svgFor(level) {
+  switch (level) {
+    case 1: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="84" rx="30" ry="3.5" fill="#fff" stroke="#aaa" stroke-width="1"/>
+        <path d="M 36 56 L 36 78 Q 36 82 40 82 L 60 82 Q 64 82 64 78 L 64 56 Z" fill="#fff" stroke="#666" stroke-width="1.5"/>
+        <path d="M 64 60 Q 75 60 75 68 Q 75 76 64 76" fill="none" stroke="#666" stroke-width="2"/>
+        <ellipse cx="50" cy="57" rx="13" ry="2.5" fill="#2D1810"/>
+        <path d="M 50 45 Q 48 40 52 36" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" fill="none"/>
+      </svg>`;
+    case 2: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 30 22 Q 28 16 32 12" stroke="#ddd" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <path d="M 42 22 Q 40 16 44 12" stroke="#ddd" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <path d="M 54 22 Q 52 16 56 12" stroke="#ddd" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <path d="M 28 38 L 28 80 Q 28 86 34 86 L 64 86 Q 70 86 70 80 L 70 38 Z" fill="#fff" stroke="#666" stroke-width="1.5"/>
+        <path d="M 70 50 Q 86 50 86 64 Q 86 78 70 76" fill="none" stroke="#666" stroke-width="2.5"/>
+        <path d="M 30 40 L 30 80 Q 30 84 34 84 L 64 84 Q 68 84 68 80 L 68 40 Z" fill="#5D3A1A"/>
+        <ellipse cx="49" cy="40" rx="19" ry="2.5" fill="#7B4F2A"/>
+      </svg>`;
+    case 3: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 32 26 L 30 84 Q 30 90 36 90 L 64 90 Q 70 90 70 84 L 68 26 Z" fill="rgba(255,255,255,0.18)" stroke="#aaa" stroke-width="1.5"/>
+        <path d="M 33 28 L 31 84 Q 31 87 35 87 L 65 87 Q 69 87 69 84 L 67 28 Z" fill="#F5DEB3"/>
+        <path d="M 33 52 L 31 84 Q 31 87 35 87 L 65 87 Q 69 87 69 84 L 67 52 Z" fill="#8B5A2B"/>
+        <path d="M 70 40 Q 86 42 86 60 Q 86 78 70 76" fill="none" stroke="#aaa" stroke-width="2.5"/>
+        <ellipse cx="50" cy="29" rx="17" ry="1.8" fill="#FFF6E0" opacity="0.9"/>
+      </svg>`;
+    case 4: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="88" rx="38" ry="3.5" fill="#fff" stroke="#aaa" stroke-width="1"/>
+        <path d="M 28 50 L 28 82 Q 28 88 34 88 L 66 88 Q 72 88 72 82 L 72 50 Z" fill="#fff" stroke="#666" stroke-width="1.5"/>
+        <path d="M 72 58 Q 89 58 89 70 Q 89 82 72 80" fill="none" stroke="#666" stroke-width="2.5"/>
+        <ellipse cx="50" cy="51" rx="20" ry="3.5" fill="#7B4F2A"/>
+        <ellipse cx="50" cy="50" rx="18" ry="3" fill="#F5E6CE"/>
+        <path d="M 50 47 Q 44 43 42 49 Q 42 53 50 57 Q 58 53 58 49 Q 56 43 50 47 Z" fill="#7B4F2A"/>
+      </svg>`;
+    case 5: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 33 16 L 27 90 Q 27 94 31 94 L 69 94 Q 73 94 73 90 L 67 16 Z" fill="rgba(255,255,255,0.15)" stroke="#aaa" stroke-width="1.5"/>
+        <path d="M 34 24 L 29 88 Q 29 91 32 91 L 68 91 Q 71 91 71 88 L 66 24 Z" fill="#C8881F" opacity="0.85"/>
+        <rect x="38" y="32" width="9" height="9" fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.8)" stroke-width="0.5" rx="1.5"/>
+        <rect x="51" y="44" width="9" height="9" fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.8)" stroke-width="0.5" rx="1.5"/>
+        <rect x="40" y="60" width="8" height="8" fill="rgba(255,255,255,0.45)" stroke="rgba(255,255,255,0.7)" stroke-width="0.5" rx="1.5"/>
+        <line x1="58" y1="6" x2="54" y2="55" stroke="#FF6B6B" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 26 22 Q 26 17 32 17 L 39 17 Q 39 24 32 24 Q 26 24 26 22 Z" fill="#FFD93D" stroke="#C9A634" stroke-width="0.8"/>
+      </svg>`;
+    case 6: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 33 28 L 27 90 Q 27 94 31 94 L 69 94 Q 73 94 73 90 L 67 28 Z" fill="rgba(255,255,255,0.15)" stroke="#aaa" stroke-width="1.5"/>
+        <path d="M 34 38 L 29 88 Q 29 91 32 91 L 68 91 Q 71 91 71 88 L 66 38 Z" fill="#2D1810"/>
+        <ellipse cx="50" cy="28" rx="22" ry="6" fill="#fff"/>
+        <ellipse cx="42" cy="22" rx="9" ry="6" fill="#fff"/>
+        <ellipse cx="56" cy="20" rx="10" ry="7" fill="#fff"/>
+        <path d="M 38 26 Q 41 30 44 26 Q 47 30 50 26 Q 53 30 56 26" stroke="#3D2817" stroke-width="1.5" fill="none"/>
+        <line x1="62" y1="4" x2="58" y2="60" stroke="#5DADE2" stroke-width="3" stroke-linecap="round"/>
+      </svg>`;
+    case 7: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 32 38 L 25 88 Q 25 92 31 92 L 69 92 Q 75 92 75 88 L 68 38 Z" fill="rgba(255,255,255,0.2)" stroke="#aaa" stroke-width="1.5"/>
+        <path d="M 33 40 L 27 86 Q 27 89 31 89 L 69 89 Q 73 89 73 86 L 67 40 Z" fill="#E8C8B5"/>
+        <path d="M 30 38 Q 50 14 70 38 Z" fill="rgba(255,255,255,0.3)" stroke="#aaa" stroke-width="1.5"/>
+        <ellipse cx="50" cy="34" rx="17" ry="5" fill="#fff"/>
+        <ellipse cx="44" cy="28" rx="8" ry="5" fill="#fff"/>
+        <ellipse cx="55" cy="26" rx="9" ry="6" fill="#fff"/>
+        <line x1="56" y1="6" x2="50" y2="50" stroke="#27AE60" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="40" cy="65" r="2" fill="#5D3A1A"/>
+        <circle cx="58" cy="72" r="2" fill="#5D3A1A"/>
+        <circle cx="48" cy="78" r="2" fill="#5D3A1A"/>
+      </svg>`;
+    case 8: return `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <line x1="50" y1="88" x2="50" y2="94" stroke="#888" stroke-width="3"/>
+        <ellipse cx="50" cy="96" rx="20" ry="2.5" fill="#888" opacity="0.5"/>
+        <path d="M 22 50 L 50 88 L 78 50 Z" fill="rgba(255,255,255,0.2)" stroke="#aaa" stroke-width="1.5"/>
+        <path d="M 27 53 L 73 53 L 50 80 Z" fill="#FF6B9D"/>
+        <path d="M 33 62 L 67 62 L 50 80 Z" fill="#FFD93D"/>
+        <path d="M 39 72 L 61 72 L 50 80 Z" fill="#27AE60"/>
+        <ellipse cx="50" cy="48" rx="26" ry="5" fill="#fff"/>
+        <ellipse cx="50" cy="40" rx="20" ry="5" fill="#fff"/>
+        <ellipse cx="50" cy="32" rx="14" ry="5" fill="#fff"/>
+        <ellipse cx="50" cy="25" rx="9" ry="4" fill="#fff"/>
+        <line x1="50" y1="13" x2="46" y2="6" stroke="#27AE60" stroke-width="2"/>
+        <circle cx="50" cy="18" r="5" fill="#E74C3C"/>
+        <circle cx="48" cy="16" r="1.5" fill="#FF8AA0"/>
+        <text x="14" y="32" font-size="14" fill="#FFD93D">✦</text>
+        <text x="80" y="44" font-size="12" fill="#FFD93D">✦</text>
+        <text x="18" y="78" font-size="10" fill="#FFD93D">✦</text>
+      </svg>`;
+  }
+  return '';
+}
+
+// ===== State =====
+let board = new Array(LANE_SIZE).fill(null);
+let preview = null;
+let hold = null;
+let holdUsed = false;
+let stageIdx = 0;
+let turnsLeft = 0;
+let made = 0;
+let busy = false;
+
+function randomDrink() {
+  const r = Math.random();
+  if (r < 0.65) return 1;
+  if (r < 0.92) return 2;
+  return 3;
+}
+
+function startGame() {
+  board = new Array(LANE_SIZE).fill(null);
+  preview = randomDrink();
+  hold = null;
+  stageIdx = 0;
+  busy = false;
+  startStage();
+  document.getElementById('title-screen').hidden = true;
+  document.getElementById('game-screen').hidden = false;
+  buildLane();
+  render();
+}
+
+function startStage() {
+  const s = STAGES[stageIdx];
+  turnsLeft = s.turns;
+  made = 0;
+  holdUsed = false;
+}
+
+function buildLane() {
+  const laneEl = document.getElementById('lane');
+  laneEl.innerHTML = '';
+  for (let i = 0; i < LANE_SIZE; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    laneEl.appendChild(cell);
+  }
+}
+
+function slide() {
+  if (busy) return;
+  if (board[LANE_SIZE - 1] !== null) {
+    gameOver('レーンが詰まりました');
+    return;
+  }
+  busy = true;
+
+  board[LANE_SIZE - 1] = preview;
+  preview = randomDrink();
+  holdUsed = false;
+
+  const enteredCells = new Set([LANE_SIZE - 1]);
+  const mergedCells = new Set();
+  let pos = LANE_SIZE - 1;
+
+  while (pos > 0) {
+    if (board[pos - 1] === null) {
+      board[pos - 1] = board[pos];
+      board[pos] = null;
+      enteredCells.delete(pos);
+      enteredCells.add(pos - 1);
+      pos--;
+    } else if (board[pos - 1] === board[pos] && board[pos] < MAX_LEVEL) {
+      const next = board[pos] + 1;
+      board[pos - 1] = next;
+      board[pos] = null;
+      enteredCells.delete(pos);
+      mergedCells.add(pos - 1);
+      const stage = STAGES[stageIdx];
+      if (next === stage.target) made++;
+      pos--;
+    } else {
+      break;
+    }
+  }
+
+  turnsLeft--;
+  render();
+
+  // animate
+  const cells = document.querySelectorAll('.cell');
+  enteredCells.forEach(p => {
+    const c = cells[p];
+    c.classList.remove('entered'); void c.offsetWidth; c.classList.add('entered');
+  });
+  mergedCells.forEach(p => {
+    const c = cells[p];
+    c.classList.remove('merged'); void c.offsetWidth; c.classList.add('merged');
+  });
+
+  setTimeout(() => {
+    busy = false;
+    const stage = STAGES[stageIdx];
+    if (made >= stage.count) {
+      stageClear();
+    } else if (turnsLeft <= 0) {
+      gameOver('ターン切れ');
+    } else if (board[LANE_SIZE - 1] !== null) {
+      gameOver('レーンが詰まりました');
+    }
+  }, 320);
+}
+
+function holdAction() {
+  if (busy || holdUsed) return;
+  if (hold === null) {
+    hold = preview;
+    preview = randomDrink();
+  } else {
+    [hold, preview] = [preview, hold];
+  }
+  holdUsed = true;
+  render();
+}
+
+function stageClear() {
+  if (stageIdx + 1 >= STAGES.length) {
+    showOverlay('★ ALL CLEAR ★', '全ステージ達成!<br>カフェマージマスター!', '最初から', () => {
+      startGame();
+    });
+    return;
+  }
+  const cleared = stageIdx + 1;
+  stageIdx++;
+  showOverlay(`STAGE ${cleared} CLEAR`, `次のお題:<br><b>${DRINKS[STAGES[stageIdx].target].name}</b> を ${STAGES[stageIdx].count}個 (${STAGES[stageIdx].turns}ターン)`, '続ける', () => {
+    startStage();
+    render();
+  });
+}
+
+function gameOver(reason) {
+  showOverlay('GAME OVER', `${reason}<br>到達ステージ: <b>${stageIdx + 1}</b>`, 'もう一度', () => {
+    startGame();
+  });
+}
+
+function showOverlay(title, body, btnText, btnAction) {
+  const old = document.querySelector('.overlay');
+  if (old) old.remove();
+  const div = document.createElement('div');
+  div.className = 'overlay';
+  div.innerHTML = `
+    <h2>${title}</h2>
+    <p>${body}</p>
+    <button class="btn">${btnText}</button>
+    <button class="btn secondary" id="ov-title">タイトルへ</button>
+  `;
+  div.querySelector('.btn').addEventListener('click', () => {
+    div.remove();
+    btnAction();
+  });
+  div.querySelector('#ov-title').addEventListener('click', () => {
+    div.remove();
+    document.getElementById('title-screen').hidden = false;
+    document.getElementById('game-screen').hidden = true;
+  });
+  document.body.appendChild(div);
+}
+
+function render() {
+  const stage = STAGES[stageIdx];
+  document.getElementById('stage-num').textContent = stageIdx + 1;
+  const turnsEl = document.getElementById('turns');
+  turnsEl.textContent = turnsLeft;
+  turnsEl.classList.toggle('low', turnsLeft <= 3);
+  document.getElementById('progress').textContent = `${made}/${stage.count}`;
+  document.getElementById('mission-text').innerHTML =
+    `<span class="target">${DRINKS[stage.target].name}</span> を ${stage.count}個 作る`;
+
+  const cells = document.querySelectorAll('.cell');
+  for (let i = 0; i < LANE_SIZE; i++) {
+    cells[i].innerHTML = board[i] !== null ? svgFor(board[i]) : '';
+  }
+
+  const holdSlot = document.getElementById('hold-slot');
+  holdSlot.innerHTML = '<div class="label">HOLD</div>' + (hold ? svgFor(hold) : '');
+  holdSlot.classList.toggle('disabled', holdUsed);
+  const previewSlot = document.getElementById('preview-slot');
+  previewSlot.innerHTML = '<div class="label">NEXT</div>' + (preview ? svgFor(preview) : '');
+
+  document.getElementById('hold-btn').disabled = holdUsed;
+}
+
+// ===== Input =====
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('slide-btn').addEventListener('click', slide);
+document.getElementById('hold-btn').addEventListener('click', holdAction);
+
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('game-screen').hidden) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (!document.getElementById('title-screen').hidden) startGame();
+    }
+    return;
+  }
+  if (document.querySelector('.overlay')) return;
+  if (e.key === 'ArrowLeft' || e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    slide();
+  } else if (e.key === 'Shift' || e.key === 'h' || e.key === 'H' || e.key === 'c' || e.key === 'C') {
+    e.preventDefault();
+    holdAction();
+  }
+});
+
+// title icon
+document.getElementById('title-icon').innerHTML = svgFor(7);
+</script>
+
+</body>
+</html>
