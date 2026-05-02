@@ -140,10 +140,13 @@
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
-    if (e.touches && e.touches[0]) {
-      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-    }
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const src = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    const sx = W / rect.width;
+    const sy = H / rect.height;
+    return {
+      x: (src.clientX - rect.left) * sx,
+      y: (src.clientY - rect.top) * sy,
+    };
   }
 
   canvas.addEventListener('mousedown', (e) => {
