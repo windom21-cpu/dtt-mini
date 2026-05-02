@@ -23,6 +23,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
+    height: 100dvh;
     background: linear-gradient(180deg, #FFF4E0 0%, #F5C988 100%);
     color: var(--text-brown);
     font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
@@ -100,18 +101,54 @@
     border: 2px solid #E8B98C;
     border-radius: 10px;
     padding: 14px 18px;
-    margin: 18px 0 22px;
+    margin: 18px 0 14px;
     font-size: 13px;
     line-height: 1.7;
   }
   #rules b { color: var(--accent-dark); font-weight: 700; }
+
+  #hs-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 245, 220, 0.85);
+    border: 2px solid var(--accent-soft);
+    border-radius: 999px;
+    padding: 6px 22px;
+    margin: 4px 0 18px;
+    font-size: 13px;
+  }
+  #hs-bar .label {
+    color: var(--wood-dark);
+    font-weight: bold;
+    letter-spacing: 0.12em;
+  }
+  #hs-bar .value {
+    color: var(--accent-dark);
+    font-weight: bold;
+    font-size: 18px;
+  }
+
+  .new-record {
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 6px;
+    animation: pulse-record 0.8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse-record {
+    from { transform: scale(1); }
+    to { transform: scale(1.06); }
+  }
 
   /* Game */
   #game-screen {
     display: flex;
     flex-direction: column;
     width: 100vw;
+    width: 100dvw;
     height: 100vh;
+    height: 100dvh;
     position: relative;
   }
 
@@ -276,7 +313,7 @@
 </head>
 <body>
 
-<div id="version">v2.1.1 / build 2026-05-03-05</div>
+<div id="version">v2.2.0 / build 2026-05-03-06</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
@@ -290,6 +327,8 @@
     ・ <b>テイクアウト</b> の注文を捌くと得点<br>
     ・ 危険ライン(赤点線)まで押し戻されたら終了
   </div>
+  <div id="hs-bar"><span class="label">ハイスコア</span><span class="value" id="hs-value">0</span></div>
+  <br>
   <button id="start-btn" class="btn">スタート</button>
 </div>
 
@@ -317,8 +356,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.1.1';
-const BUILD   = '2026-05-03-05';
+const VERSION = 'v2.2.0';
+const BUILD   = '2026-05-03-06';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
@@ -550,6 +589,29 @@ function randomDrink() {
   return 3;
 }
 
+// ===== High score (localStorage) =====
+const HS_KEY = 'cafe-merge-high-score';
+function getHighScore() {
+  try {
+    const v = localStorage.getItem(HS_KEY);
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  } catch { return 0; }
+}
+function trySaveHighScore(s) {
+  try {
+    if (s > getHighScore()) {
+      localStorage.setItem(HS_KEY, s.toString());
+      return true;
+    }
+  } catch {}
+  return false;
+}
+function refreshHsDisplay() {
+  const el = document.getElementById('hs-value');
+  if (el) el.textContent = getHighScore();
+}
+
 function recomputeBounds() {
   const minInset = W * PLAY_INSET_PCT;
   const inset = Math.max(minInset, (W - MAX_PLAY_WIDTH) / 2);
@@ -559,7 +621,8 @@ function recomputeBounds() {
 
 function recomputeRadii() {
   const playW = wallRight - wallLeft;
-  const baseUnit = Math.min(playW / 14, H / 22);
+  // bigger drinks → tighter table, real game-over pressure
+  const baseUnit = Math.min(playW / 11, H / 17);
   for (let lv = 1; lv <= MAX_LEVEL; lv++) {
     RADIUS[lv] = baseUnit * RADIUS_RATIO[lv];
   }
@@ -617,9 +680,13 @@ function nextOrder() {
 
 function gameOver() {
   running = false;
+  const isNew = trySaveHighScore(score);
+  const high = getHighScore();
+  refreshHsDisplay();
+  const recordTag = isNew ? `<div class="new-record">★ NEW RECORD ★</div>` : '';
   showOverlay(
     'GAME OVER',
-    `危険ラインを越えました<br>SCORE: <b>${score}</b><br>注文クリア: <b>${orderNum - 1}</b>`,
+    `${recordTag}SCORE: <b>${score}</b><br>HIGH: <b>${high}</b><br>注文クリア: <b>${orderNum - 1}</b>`,
     'もう一度',
     () => { startGame(); }
   );
@@ -983,6 +1050,7 @@ function showOverlay(title, body, btnText, btnAction) {
     div.remove();
     document.getElementById('title-screen').hidden = false;
     document.getElementById('game-screen').hidden = true;
+    refreshHsDisplay();
   });
   document.body.appendChild(div);
 }
@@ -1086,6 +1154,7 @@ document.addEventListener('keydown', (e) => {
 preloadDrinks().then(() => {
   document.getElementById('title-icon').innerHTML = svgFor(7);
 });
+refreshHsDisplay();
 
 // roundRect polyfill for older Safari
 if (!CanvasRenderingContext2D.prototype.roundRect) {
