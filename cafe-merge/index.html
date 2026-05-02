@@ -21,6 +21,7 @@
     --danger: #E53935;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
   html, body {
     height: 100%;
     height: 100dvh;
@@ -320,11 +321,20 @@
 </head>
 <body>
 
-<div id="version">v2.3.1 / build 2026-05-03-13</div>
+<div id="version">v2.3.2 / build 2026-05-03-14</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
   <h1>カフェマージ</h1>
+  <div class="subtitle">ガイドの方向を決めて、<br>放したら発射!</div>
+  <div id="rules">
+    <b>遊び方</b><br>
+    ・ 画面に <b>触れて方向を狙う</b> → <b>放すと発射</b><br>
+    ・ 真上から左右60度の範囲内のみ撃てる<br>
+    ・ ぶつかった同種は <b>合体</b> (連鎖もする)<br>
+    ・ <b>テイクアウト</b> の注文を捌くと得点<br>
+    ・ 危険ライン(赤点線)まで押し戻されたら終了
+  </div>
   <div id="hs-bar"><span class="label">ハイスコア</span><span class="value" id="hs-value">0</span></div>
   <button id="start-btn" class="btn">スタート</button>
 </div>
@@ -353,8 +363,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.3.1';
-const BUILD   = '2026-05-03-13';
+const VERSION = 'v2.3.2';
+const BUILD   = '2026-05-03-14';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
