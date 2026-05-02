@@ -6,31 +6,36 @@
 <title>カフェマージ</title>
 <style>
   :root {
-    --bg: #2C1810;
-    --bg2: #3D2817;
-    --panel: #4A2F1F;
-    --accent: #D4A574;
-    --accent2: #F2C796;
-    --text: #F4E8D8;
-    --muted: rgba(244, 232, 216, 0.55);
-    --cell-bg: rgba(244, 232, 216, 0.06);
-    --cell-border: rgba(212, 165, 116, 0.3);
-    --danger: #E07A5F;
+    --cream: #FFEED5;
+    --cream-light: #FFF8E7;
+    --warm-gold: #F0C988;
+    --wood-light: #D8A86A;
+    --wood: #B8884E;
+    --wood-dark: #8B5A2B;
+    --accent: #FF8C42;
+    --accent-dark: #C9610B;
+    --accent-soft: #FFB060;
+    --text-brown: #5D3A1A;
+    --paper: #FFF5E0;
+    --good: #4CAF50;
+    --danger: #E53935;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
-    background: linear-gradient(180deg, #2C1810 0%, #1A0E08 100%);
-    color: var(--text);
+    background: linear-gradient(180deg, #FFF4E0 0%, #F5C988 100%);
+    color: var(--text-brown);
     font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
     overflow: hidden;
     -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
   }
   body {
     display: flex;
     align-items: center;
     justify-content: center;
     user-select: none;
+    touch-action: none;
   }
   button { font-family: inherit; }
 
@@ -39,231 +44,210 @@
     bottom: 4px;
     right: 8px;
     font-size: 10px;
-    color: rgba(244, 232, 216, 0.4);
-    z-index: 10;
+    color: rgba(93, 58, 26, 0.5);
+    z-index: 200;
     pointer-events: none;
   }
 
   /* Title */
   #title-screen {
     text-align: center;
-    padding: 32px 20px;
+    padding: 28px 20px;
     width: 100%;
     max-width: 480px;
   }
   #title-screen h1 {
-    font-size: clamp(32px, 8vw, 56px);
-    color: var(--accent);
+    font-size: clamp(36px, 9vw, 60px);
+    color: var(--accent-dark);
     margin: 12px 0 6px;
     letter-spacing: 0.08em;
-    text-shadow: 0 2px 12px rgba(212, 165, 116, 0.3);
+    text-shadow: 0 2px 8px rgba(255, 200, 130, 0.5);
   }
   #title-screen .subtitle {
-    font-size: 13px;
-    margin-bottom: 24px;
-    opacity: 0.75;
-    line-height: 1.6;
+    font-size: 14px;
+    margin-bottom: 22px;
+    opacity: 0.85;
+    line-height: 1.7;
   }
   #title-icon {
-    width: 140px;
-    height: 140px;
+    width: 150px;
+    height: 150px;
     margin: 0 auto;
   }
   .btn {
     padding: 14px 36px;
     font-size: 17px;
     background: var(--accent);
-    color: var(--bg);
+    color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     font-weight: bold;
     cursor: pointer;
     margin: 6px;
-    box-shadow: 0 4px 0 #A07A4A;
+    box-shadow: 0 4px 0 var(--accent-dark);
     transition: transform 0.05s, box-shadow 0.05s;
   }
-  .btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 #A07A4A;
-  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--accent-dark); }
   .btn.secondary {
-    background: var(--panel);
-    color: var(--text);
-    box-shadow: 0 4px 0 #2A1810;
+    background: var(--cream-light);
+    color: var(--text-brown);
+    box-shadow: 0 4px 0 var(--wood);
   }
-  .btn.secondary:active { box-shadow: 0 2px 0 #2A1810; }
-
+  .btn.secondary:active { box-shadow: 0 2px 0 var(--wood); }
   #rules {
     text-align: left;
-    background: rgba(74, 47, 31, 0.5);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin: 18px 0 24px;
-    font-size: 12.5px;
+    background: rgba(255, 245, 220, 0.85);
+    border: 2px solid #E8B98C;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 18px 0 22px;
+    font-size: 13px;
     line-height: 1.7;
-    color: var(--muted);
   }
-  #rules b { color: var(--accent); font-weight: 600; }
+  #rules b { color: var(--accent-dark); font-weight: 700; }
 
   /* Game */
   #game-screen {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    padding: 10px;
-    max-width: 560px;
-    gap: 10px;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
   }
 
-  #header {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    width: 100%;
-    background: var(--panel);
-    border-radius: 10px;
-    padding: 8px 4px;
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    padding: 8px 10px;
+    gap: 8px;
+    background: linear-gradient(180deg, var(--cream-light), #FFEEC8);
+    color: var(--text-brown);
+    border-bottom: 2px solid var(--wood-light);
+    z-index: 5;
   }
-  #header > div {
+  #order-panel {
+    flex: 1;
+    background: var(--paper);
+    border-radius: 10px;
+    border: 1px solid #E8C088;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 0 rgba(184, 136, 78, 0.4);
+  }
+  #order-img { width: 46px; height: 46px; flex-shrink: 0; }
+  #order-img svg { width: 100%; height: 100%; }
+  #order-text { flex: 1; line-height: 1.3; }
+  #order-text .label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--wood-dark);
+    font-weight: bold;
+  }
+  #order-text .name {
+    font-weight: bold;
+    font-size: 13px;
+    color: var(--text-brown);
+  }
+  #order-progress {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--good);
+    min-width: 36px;
+    text-align: center;
+  }
+  #score-panel {
+    background: var(--accent);
+    color: white;
+    border-radius: 10px;
+    padding: 4px 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    box-shadow: 0 2px 0 var(--accent-dark);
   }
-  #header .label { font-size: 10px; opacity: 0.6; letter-spacing: 0.05em; }
-  #header .value { font-size: 18px; font-weight: bold; color: var(--accent); }
-  #header .turns.low { color: var(--danger); animation: blink 0.6s infinite alternate; }
-  @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
+  #score-panel .label { font-size: 9px; opacity: 0.85; letter-spacing: 0.1em; }
+  #score-panel .value { font-size: 22px; font-weight: bold; }
 
-  #mission {
-    width: 100%;
-    background: var(--panel);
-    padding: 10px 12px;
-    border-radius: 10px;
-    text-align: center;
-    border: 1px solid var(--cell-border);
-  }
-  #mission .label { font-size: 10px; opacity: 0.6; margin-bottom: 4px; letter-spacing: 0.1em; }
-  #mission .text { font-size: 15px; font-weight: bold; }
-  #mission .text .target { color: var(--accent2); }
-
-  .lane-wrap {
-    width: 100%;
-    position: relative;
-  }
-  .lane-axis {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: var(--muted);
-    padding: 0 6px 4px;
-  }
-  #lane {
-    display: flex;
-    gap: 4px;
-    width: 100%;
-  }
-  .cell {
+  #canvas-wrap {
     flex: 1;
-    aspect-ratio: 1;
-    background: var(--cell-bg);
-    border: 1px dashed var(--cell-border);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     position: relative;
-    transition: transform 0.15s;
+    overflow: hidden;
   }
-  .cell.merged { animation: pulse 0.35s ease-out; }
-  @keyframes pulse {
-    0% { transform: scale(1); filter: brightness(1); }
-    40% { transform: scale(1.18); filter: brightness(1.4); }
-    100% { transform: scale(1); filter: brightness(1); }
-  }
-  .cell.entered { animation: enter 0.25s ease-out; }
-  @keyframes enter {
-    from { transform: translateX(20%); opacity: 0.4; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-  .cell svg { width: 92%; height: 92%; }
-
-  #queue-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+  #game-canvas {
     width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
   }
-  .slot {
-    width: 76px;
-    height: 76px;
-    background: var(--cell-bg);
-    border: 1px solid var(--cell-border);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-  .slot .label {
+
+  #order-flash {
     position: absolute;
-    top: 3px;
-    font-size: 9px;
-    opacity: 0.6;
-    letter-spacing: 0.1em;
-  }
-  .slot.preview {
-    border: 2px solid var(--accent);
-    box-shadow: 0 0 12px rgba(212, 165, 116, 0.3);
-  }
-  .slot.disabled { opacity: 0.4; }
-  .slot svg { width: 75%; height: 75%; }
-  .arrow {
-    font-size: 22px;
-    color: var(--accent);
-    opacity: 0.7;
-  }
-
-  #controls {
-    display: flex;
-    gap: 8px;
-    width: 100%;
-  }
-  .ctrl {
-    flex: 1;
-    padding: 16px 8px;
-    font-size: 16px;
-    background: var(--panel);
-    color: var(--text);
-    border: 1px solid var(--cell-border);
-    border-radius: 10px;
-    cursor: pointer;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    background: var(--good);
+    color: white;
+    padding: 14px 32px;
+    border-radius: 999px;
+    font-size: 20px;
     font-weight: bold;
-    box-shadow: 0 3px 0 #2A1810;
-    transition: transform 0.05s, box-shadow 0.05s;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
   }
-  .ctrl:active:not(:disabled) {
-    transform: translateY(2px);
-    box-shadow: 0 1px 0 #2A1810;
-  }
-  .ctrl.primary {
-    background: var(--accent);
-    color: var(--bg);
-    flex: 2;
-    box-shadow: 0 3px 0 #A07A4A;
-  }
-  .ctrl.primary:active { box-shadow: 0 1px 0 #A07A4A; }
-  .ctrl:disabled {
-    opacity: 0.4;
-    cursor: default;
+  #order-flash.show { animation: flash 1.2s ease-out forwards; }
+  @keyframes flash {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -100%) scale(0.9); }
   }
 
-  /* Overlay */
+  #recipe-bar {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 8px;
+    background: var(--cream-light);
+    border-top: 2px solid var(--wood-light);
+    z-index: 5;
+  }
+  .recipe-cell {
+    width: 34px;
+    height: 34px;
+    background: rgba(220, 170, 100, 0.25);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+    transition: opacity 0.3s, box-shadow 0.3s;
+    position: relative;
+  }
+  .recipe-cell.unlocked {
+    opacity: 1;
+    background: #FFE5BA;
+    box-shadow: 0 0 8px var(--accent-soft);
+  }
+  .recipe-cell svg { width: 90%; height: 90%; }
+  .recipe-cell .lvnum {
+    position: absolute;
+    bottom: -1px; right: 2px;
+    font-size: 9px;
+    color: var(--accent-dark);
+    font-weight: bold;
+  }
+
   .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.78);
+    background: rgba(255, 248, 230, 0.92);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -272,89 +256,74 @@
     padding: 24px;
     backdrop-filter: blur(4px);
     animation: fadein 0.2s;
+    color: var(--text-brown);
   }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   .overlay h2 {
-    font-size: 30px;
-    color: var(--accent);
+    font-size: 32px;
+    color: var(--accent-dark);
     margin-bottom: 12px;
     text-align: center;
   }
   .overlay p {
     margin-bottom: 22px;
-    font-size: 15px;
+    font-size: 16px;
     text-align: center;
     line-height: 1.6;
     max-width: 320px;
-  }
-  .overlay .achieved {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
-
-  @media (min-width: 600px) {
-    .cell svg, .slot svg { /* PC: a touch larger feel */ }
   }
 </style>
 </head>
 <body>
 
-<div id="version">v1.0.0 / build 2026-05-03-01</div>
+<div id="version">v2.1.1 / build 2026-05-03-05</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
   <h1>カフェマージ</h1>
-  <div class="subtitle">同じドリンクをくっつけて<br>お題のドリンクを作ろう</div>
+  <div class="subtitle">ガイドの方向を決めて、<br>放したら発射!</div>
   <div id="rules">
     <b>遊び方</b><br>
-    ・ <b>スライド</b>でドリンクをレーンの奥へ送る<br>
-    ・ 同じドリンクが隣り合うと <b>合体</b> して上のランクに<br>
-    ・ お題のドリンクを指定回数 <b>ターン内</b> に作ればクリア<br>
-    ・ <b>HOLD</b> でドリンクを 1 つ温存できる(1ターン1回)<br>
-    ・ レーンが詰まる / ターン切れで終了
+    ・ 画面に <b>触れて方向を狙う</b> → <b>放すと発射</b><br>
+    ・ 真上から左右60度の範囲内のみ撃てる<br>
+    ・ ぶつかった同種は <b>合体</b> (連鎖もする)<br>
+    ・ <b>テイクアウト</b> の注文を捌くと得点<br>
+    ・ 危険ライン(赤点線)まで押し戻されたら終了
   </div>
   <button id="start-btn" class="btn">スタート</button>
 </div>
 
 <div id="game-screen" hidden>
-  <div id="header">
-    <div><div class="label">STAGE</div><div class="value" id="stage-num">1</div></div>
-    <div><div class="label">残りターン</div><div class="value turns" id="turns">15</div></div>
-    <div><div class="label">進捗</div><div class="value" id="progress">0/1</div></div>
+  <header id="hud">
+    <div id="order-panel">
+      <div id="order-img"></div>
+      <div id="order-text">
+        <div class="label">テイクアウト</div>
+        <div class="name" id="order-name">―</div>
+      </div>
+      <div id="order-progress">0/1</div>
+    </div>
+    <div id="score-panel">
+      <div class="label">SCORE</div>
+      <div class="value" id="score-value">0</div>
+    </div>
+  </header>
+  <div id="canvas-wrap">
+    <canvas id="game-canvas"></canvas>
+    <div id="order-flash"></div>
   </div>
-
-  <div id="mission">
-    <div class="label">お題</div>
-    <div class="text" id="mission-text"></div>
-  </div>
-
-  <div class="lane-wrap">
-    <div class="lane-axis"><span>← 奥</span><span>手前 →</span></div>
-    <div id="lane"></div>
-  </div>
-
-  <div id="queue-row">
-    <div class="slot" id="hold-slot"><div class="label">HOLD</div></div>
-    <div class="arrow">⇄</div>
-    <div class="slot preview" id="preview-slot"><div class="label">NEXT</div></div>
-  </div>
-
-  <div id="controls">
-    <button class="ctrl" id="hold-btn">HOLD</button>
-    <button class="ctrl primary" id="slide-btn">▶ スライド</button>
-  </div>
+  <footer id="recipe-bar"></footer>
 </div>
 
 <script>
 // ===== Version =====
-const VERSION = 'v1.0.0';
-const BUILD   = '2026-05-03-01';
+const VERSION = 'v2.1.1';
+const BUILD   = '2026-05-03-05';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
-const LANE_SIZE = 7;
 const MAX_LEVEL = 8;
+const ANGLE_LIMIT = Math.PI / 3; // ±60° from straight up
 
 const DRINKS = [
   null,
@@ -368,81 +337,100 @@ const DRINKS = [
   { name: 'メガパフェドリンク' },
 ];
 
-const STAGES = [
-  { target: 3, count: 1, turns: 14 },
-  { target: 4, count: 1, turns: 16 },
-  { target: 4, count: 2, turns: 20 },
-  { target: 5, count: 1, turns: 20 },
-  { target: 5, count: 2, turns: 24 },
-  { target: 6, count: 1, turns: 26 },
-  { target: 6, count: 2, turns: 32 },
-  { target: 7, count: 1, turns: 34 },
-  { target: 8, count: 1, turns: 44 },
-];
+// Radii — recomputed at resize. Each level gets a slightly larger circle.
+const RADIUS = [0, 24, 28, 33, 38, 43, 48, 54, 60];
+const RADIUS_RATIO = [0, 1.0, 1.18, 1.38, 1.58, 1.78, 1.98, 2.20, 2.50];
+
+// physics — strong fire, low friction so untouched fires reach the back
+const FIRE_SPEED = 900;       // px/sec
+const FRICTION_K = 1.0;       // exponential decay rate per second
+const MIN_SPEED  = 6;
+const WALL_BOUNCE_SIDE = 0.5;
+const COLL_E     = 0.65;
+
+const DANGER_PAD = 88;        // distance from canvas bottom for danger line
+const PLAYER_Y_PAD = 54;      // player drink center distance from canvas bottom
+
+// playable area bezel — narrower than full canvas to keep things from scattering
+const PLAY_INSET_PCT = 0.10;  // each side; 10% means 80% of W is playable
+const MAX_PLAY_WIDTH = 600;   // cap on play area width for very wide screens
 
 // ===== SVG drinks =====
 function svgFor(level) {
   switch (level) {
     case 1: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="50" cy="84" rx="30" ry="3.5" fill="#fff" stroke="#aaa" stroke-width="1"/>
-        <path d="M 36 56 L 36 78 Q 36 82 40 82 L 60 82 Q 64 82 64 78 L 64 56 Z" fill="#fff" stroke="#666" stroke-width="1.5"/>
-        <path d="M 64 60 Q 75 60 75 68 Q 75 76 64 76" fill="none" stroke="#666" stroke-width="2"/>
+        <ellipse cx="50" cy="86" rx="32" ry="3" fill="rgba(0,0,0,0.25)"/>
+        <ellipse cx="50" cy="84" rx="30" ry="3.5" fill="#fff" stroke="#888" stroke-width="1"/>
+        <path d="M 36 56 L 36 78 Q 36 82 40 82 L 60 82 Q 64 82 64 78 L 64 56 Z" fill="#fff" stroke="#666" stroke-width="1.4"/>
+        <path d="M 64 60 Q 76 60 76 68 Q 76 76 64 76" fill="none" stroke="#666" stroke-width="2"/>
         <ellipse cx="50" cy="57" rx="13" ry="2.5" fill="#2D1810"/>
-        <path d="M 50 45 Q 48 40 52 36" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" fill="none"/>
+        <ellipse cx="46" cy="56" rx="3" ry="0.8" fill="rgba(255,255,255,0.4)"/>
+        <path d="M 38 60 Q 39 70 38 78" stroke="rgba(255,255,255,0.7)" stroke-width="1.2" fill="none"/>
       </svg>`;
     case 2: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="89" rx="26" ry="3" fill="rgba(0,0,0,0.25)"/>
         <path d="M 30 22 Q 28 16 32 12" stroke="#ddd" stroke-width="1.5" fill="none" opacity="0.7"/>
         <path d="M 42 22 Q 40 16 44 12" stroke="#ddd" stroke-width="1.5" fill="none" opacity="0.7"/>
         <path d="M 54 22 Q 52 16 56 12" stroke="#ddd" stroke-width="1.5" fill="none" opacity="0.7"/>
-        <path d="M 28 38 L 28 80 Q 28 86 34 86 L 64 86 Q 70 86 70 80 L 70 38 Z" fill="#fff" stroke="#666" stroke-width="1.5"/>
+        <path d="M 28 38 L 28 80 Q 28 86 34 86 L 64 86 Q 70 86 70 80 L 70 38 Z" fill="#fff" stroke="#666" stroke-width="1.4"/>
         <path d="M 70 50 Q 86 50 86 64 Q 86 78 70 76" fill="none" stroke="#666" stroke-width="2.5"/>
         <path d="M 30 40 L 30 80 Q 30 84 34 84 L 64 84 Q 68 84 68 80 L 68 40 Z" fill="#5D3A1A"/>
         <ellipse cx="49" cy="40" rx="19" ry="2.5" fill="#7B4F2A"/>
+        <path d="M 33 45 Q 32 60 33 78" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" fill="none"/>
       </svg>`;
     case 3: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 32 26 L 30 84 Q 30 90 36 90 L 64 90 Q 70 90 70 84 L 68 26 Z" fill="rgba(255,255,255,0.18)" stroke="#aaa" stroke-width="1.5"/>
-        <path d="M 33 28 L 31 84 Q 31 87 35 87 L 65 87 Q 69 87 69 84 L 67 28 Z" fill="#F5DEB3"/>
-        <path d="M 33 52 L 31 84 Q 31 87 35 87 L 65 87 Q 69 87 69 84 L 67 52 Z" fill="#8B5A2B"/>
-        <path d="M 70 40 Q 86 42 86 60 Q 86 78 70 76" fill="none" stroke="#aaa" stroke-width="2.5"/>
-        <ellipse cx="50" cy="29" rx="17" ry="1.8" fill="#FFF6E0" opacity="0.9"/>
+        <ellipse cx="50" cy="92" rx="22" ry="3" fill="rgba(0,0,0,0.25)"/>
+        <path d="M 32 24 L 30 84 Q 30 90 36 90 L 64 90 Q 70 90 70 84 L 68 24 Z" fill="rgba(255,255,255,0.2)" stroke="#888" stroke-width="1.4"/>
+        <path d="M 33 26 L 31 84 Q 31 87 35 87 L 65 87 Q 69 87 69 84 L 67 26 Z" fill="#F5DEB3"/>
+        <path d="M 33 50 L 31 84 Q 31 87 35 87 L 65 87 Q 69 87 69 84 L 67 50 Z" fill="#8B5A2B"/>
+        <path d="M 70 38 Q 86 40 86 60 Q 86 78 70 76" fill="none" stroke="#888" stroke-width="2.5"/>
+        <ellipse cx="50" cy="27" rx="17" ry="2" fill="#FFF6E0"/>
+        <path d="M 35 32 Q 33 60 35 80" stroke="rgba(255,255,255,0.6)" stroke-width="1.2" fill="none"/>
       </svg>`;
     case 4: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="50" cy="88" rx="38" ry="3.5" fill="#fff" stroke="#aaa" stroke-width="1"/>
-        <path d="M 28 50 L 28 82 Q 28 88 34 88 L 66 88 Q 72 88 72 82 L 72 50 Z" fill="#fff" stroke="#666" stroke-width="1.5"/>
-        <path d="M 72 58 Q 89 58 89 70 Q 89 82 72 80" fill="none" stroke="#666" stroke-width="2.5"/>
+        <ellipse cx="50" cy="92" rx="38" ry="3" fill="rgba(0,0,0,0.25)"/>
+        <ellipse cx="50" cy="89" rx="38" ry="3.5" fill="#fff" stroke="#888" stroke-width="1"/>
+        <path d="M 28 50 L 28 82 Q 28 88 34 88 L 66 88 Q 72 88 72 82 L 72 50 Z" fill="#fff" stroke="#666" stroke-width="1.4"/>
+        <path d="M 72 58 Q 90 58 90 70 Q 90 82 72 80" fill="none" stroke="#666" stroke-width="2.5"/>
         <ellipse cx="50" cy="51" rx="20" ry="3.5" fill="#7B4F2A"/>
         <ellipse cx="50" cy="50" rx="18" ry="3" fill="#F5E6CE"/>
         <path d="M 50 47 Q 44 43 42 49 Q 42 53 50 57 Q 58 53 58 49 Q 56 43 50 47 Z" fill="#7B4F2A"/>
+        <path d="M 32 56 Q 31 70 32 78" stroke="rgba(255,255,255,0.7)" stroke-width="1.2" fill="none"/>
       </svg>`;
     case 5: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 33 16 L 27 90 Q 27 94 31 94 L 69 94 Q 73 94 73 90 L 67 16 Z" fill="rgba(255,255,255,0.15)" stroke="#aaa" stroke-width="1.5"/>
+        <ellipse cx="50" cy="96" rx="20" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+        <path d="M 33 16 L 27 90 Q 27 94 31 94 L 69 94 Q 73 94 73 90 L 67 16 Z" fill="rgba(255,255,255,0.18)" stroke="#888" stroke-width="1.4"/>
         <path d="M 34 24 L 29 88 Q 29 91 32 91 L 68 91 Q 71 91 71 88 L 66 24 Z" fill="#C8881F" opacity="0.85"/>
         <rect x="38" y="32" width="9" height="9" fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.8)" stroke-width="0.5" rx="1.5"/>
         <rect x="51" y="44" width="9" height="9" fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.8)" stroke-width="0.5" rx="1.5"/>
         <rect x="40" y="60" width="8" height="8" fill="rgba(255,255,255,0.45)" stroke="rgba(255,255,255,0.7)" stroke-width="0.5" rx="1.5"/>
         <line x1="58" y1="6" x2="54" y2="55" stroke="#FF6B6B" stroke-width="3" stroke-linecap="round"/>
         <path d="M 26 22 Q 26 17 32 17 L 39 17 Q 39 24 32 24 Q 26 24 26 22 Z" fill="#FFD93D" stroke="#C9A634" stroke-width="0.8"/>
+        <path d="M 31 30 Q 30 60 33 86" stroke="rgba(255,255,255,0.6)" stroke-width="1" fill="none"/>
       </svg>`;
     case 6: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 33 28 L 27 90 Q 27 94 31 94 L 69 94 Q 73 94 73 90 L 67 28 Z" fill="rgba(255,255,255,0.15)" stroke="#aaa" stroke-width="1.5"/>
+        <ellipse cx="50" cy="96" rx="22" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+        <path d="M 33 28 L 27 90 Q 27 94 31 94 L 69 94 Q 73 94 73 90 L 67 28 Z" fill="rgba(255,255,255,0.18)" stroke="#888" stroke-width="1.4"/>
         <path d="M 34 38 L 29 88 Q 29 91 32 91 L 68 91 Q 71 91 71 88 L 66 38 Z" fill="#2D1810"/>
         <ellipse cx="50" cy="28" rx="22" ry="6" fill="#fff"/>
         <ellipse cx="42" cy="22" rx="9" ry="6" fill="#fff"/>
         <ellipse cx="56" cy="20" rx="10" ry="7" fill="#fff"/>
         <path d="M 38 26 Q 41 30 44 26 Q 47 30 50 26 Q 53 30 56 26" stroke="#3D2817" stroke-width="1.5" fill="none"/>
         <line x1="62" y1="4" x2="58" y2="60" stroke="#5DADE2" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 31 42 Q 30 65 33 86" stroke="rgba(255,255,255,0.5)" stroke-width="1" fill="none"/>
       </svg>`;
     case 7: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 32 38 L 25 88 Q 25 92 31 92 L 69 92 Q 75 92 75 88 L 68 38 Z" fill="rgba(255,255,255,0.2)" stroke="#aaa" stroke-width="1.5"/>
+        <ellipse cx="50" cy="94" rx="26" ry="3" fill="rgba(0,0,0,0.25)"/>
+        <path d="M 32 38 L 25 88 Q 25 92 31 92 L 69 92 Q 75 92 75 88 L 68 38 Z" fill="rgba(255,255,255,0.22)" stroke="#888" stroke-width="1.4"/>
         <path d="M 33 40 L 27 86 Q 27 89 31 89 L 69 89 Q 73 89 73 86 L 67 40 Z" fill="#E8C8B5"/>
-        <path d="M 30 38 Q 50 14 70 38 Z" fill="rgba(255,255,255,0.3)" stroke="#aaa" stroke-width="1.5"/>
+        <path d="M 30 38 Q 50 14 70 38 Z" fill="rgba(255,255,255,0.32)" stroke="#888" stroke-width="1.4"/>
         <ellipse cx="50" cy="34" rx="17" ry="5" fill="#fff"/>
         <ellipse cx="44" cy="28" rx="8" ry="5" fill="#fff"/>
         <ellipse cx="55" cy="26" rx="9" ry="6" fill="#fff"/>
@@ -450,12 +438,14 @@ function svgFor(level) {
         <circle cx="40" cy="65" r="2" fill="#5D3A1A"/>
         <circle cx="58" cy="72" r="2" fill="#5D3A1A"/>
         <circle cx="48" cy="78" r="2" fill="#5D3A1A"/>
+        <path d="M 32 48 Q 30 70 33 84" stroke="rgba(255,255,255,0.6)" stroke-width="1" fill="none"/>
       </svg>`;
     case 8: return `
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="98" rx="24" ry="2.5" fill="rgba(0,0,0,0.25)"/>
         <line x1="50" y1="88" x2="50" y2="94" stroke="#888" stroke-width="3"/>
         <ellipse cx="50" cy="96" rx="20" ry="2.5" fill="#888" opacity="0.5"/>
-        <path d="M 22 50 L 50 88 L 78 50 Z" fill="rgba(255,255,255,0.2)" stroke="#aaa" stroke-width="1.5"/>
+        <path d="M 22 50 L 50 88 L 78 50 Z" fill="rgba(255,255,255,0.22)" stroke="#888" stroke-width="1.4"/>
         <path d="M 27 53 L 73 53 L 50 80 Z" fill="#FF6B9D"/>
         <path d="M 33 62 L 67 62 L 50 80 Z" fill="#FFD93D"/>
         <path d="M 39 72 L 61 72 L 50 80 Z" fill="#27AE60"/>
@@ -474,148 +464,504 @@ function svgFor(level) {
   return '';
 }
 
+// ===== Preload SVG → Image =====
+const drinkImages = {};
+function preloadDrinks() {
+  return Promise.all(
+    Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map(lv => {
+      return new Promise(resolve => {
+        const svg = svgFor(lv);
+        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => { drinkImages[lv] = img; resolve(); };
+        img.onerror = () => resolve();
+        img.src = url;
+      });
+    })
+  );
+}
+
+// ===== Order generation =====
+function generateOrder(orderNum) {
+  const idx = orderNum - 1;
+  const tiers = [
+    { level: 2, count: 1 },
+    { level: 3, count: 1 },
+    { level: 3, count: 2 },
+    { level: 4, count: 1 },
+    { level: 4, count: 2 },
+    { level: 5, count: 1 },
+    { level: 5, count: 2 },
+    { level: 6, count: 1 },
+    { level: 6, count: 2 },
+    { level: 7, count: 1 },
+    { level: 7, count: 2 },
+    { level: 8, count: 1 },
+  ];
+  if (idx < tiers.length) return tiers[idx];
+  const t = idx - tiers.length;
+  const pool = [
+    { level: 6, count: 2 }, { level: 7, count: 1 },
+    { level: 7, count: 2 }, { level: 8, count: 1 },
+  ];
+  return pool[t % pool.length];
+}
+
+// ===== Drink (physics body) =====
+class Drink {
+  constructor(level, x, y, vx = 0, vy = 0) {
+    this.level = level;
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.radius = RADIUS[level];
+    this.mass = this.radius * this.radius;
+    this.id = Math.random();
+  }
+}
+
 // ===== State =====
-let board = new Array(LANE_SIZE).fill(null);
-let preview = null;
-let hold = null;
-let holdUsed = false;
-let stageIdx = 0;
-let turnsLeft = 0;
-let made = 0;
-let busy = false;
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+let wallLeft = 0, wallRight = 0;  // physics side walls (inset from canvas edges)
+let drinks = [];
+let player = { x: 0, y: 0, level: 1, cooldown: 0 };
+let nextLevel = 1;
+let aim = 0;          // angle from straight up, [-ANGLE_LIMIT, ANGLE_LIMIT]
+let aiming = false;
+let aimPointerId = null;
+let score = 0;
+let orderNum = 0;
+let order = null;
+let unlocked = new Set();
+let dangerTimer = 0;
+let running = false;
+let lastTime = 0;
+let mergeFlashes = [];
+let dpr = 1;
 
 function randomDrink() {
   const r = Math.random();
-  if (r < 0.65) return 1;
-  if (r < 0.92) return 2;
+  if (r < 0.7) return 1;
+  if (r < 0.93) return 2;
   return 3;
 }
 
+function recomputeBounds() {
+  const minInset = W * PLAY_INSET_PCT;
+  const inset = Math.max(minInset, (W - MAX_PLAY_WIDTH) / 2);
+  wallLeft = inset;
+  wallRight = W - inset;
+}
+
+function recomputeRadii() {
+  const playW = wallRight - wallLeft;
+  const baseUnit = Math.min(playW / 14, H / 22);
+  for (let lv = 1; lv <= MAX_LEVEL; lv++) {
+    RADIUS[lv] = baseUnit * RADIUS_RATIO[lv];
+  }
+}
+
+function resizeCanvas() {
+  dpr = window.devicePixelRatio || 1;
+  const wrap = document.getElementById('canvas-wrap');
+  const rect = wrap.getBoundingClientRect();
+  W = rect.width;
+  H = rect.height;
+  canvas.width = Math.floor(W * dpr);
+  canvas.height = Math.floor(H * dpr);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  recomputeBounds();
+  recomputeRadii();
+  player.x = W / 2;
+  player.y = H - PLAYER_Y_PAD;
+}
+window.addEventListener('resize', () => { if (running) resizeCanvas(); });
+
+// ===== Game lifecycle =====
 function startGame() {
-  board = new Array(LANE_SIZE).fill(null);
-  preview = randomDrink();
-  hold = null;
-  stageIdx = 0;
-  busy = false;
-  startStage();
   document.getElementById('title-screen').hidden = true;
   document.getElementById('game-screen').hidden = false;
-  buildLane();
-  render();
+  resizeCanvas();
+  drinks = [];
+  player.level = randomDrink();
+  player.cooldown = 0;
+  nextLevel = randomDrink();
+  score = 0;
+  orderNum = 0;
+  unlocked = new Set();
+  dangerTimer = 0;
+  aim = 0;
+  aiming = false;
+  aimPointerId = null;
+  mergeFlashes = [];
+  nextOrder();
+  buildRecipeBar();
+  updateHUD();
+  running = true;
+  lastTime = performance.now();
+  requestAnimationFrame(loop);
 }
 
-function startStage() {
-  const s = STAGES[stageIdx];
-  turnsLeft = s.turns;
-  made = 0;
-  holdUsed = false;
+function nextOrder() {
+  orderNum++;
+  const def = generateOrder(orderNum);
+  order = { level: def.level, count: def.count, made: 0 };
+  updateHUD();
 }
 
-function buildLane() {
-  const laneEl = document.getElementById('lane');
-  laneEl.innerHTML = '';
-  for (let i = 0; i < LANE_SIZE; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    laneEl.appendChild(cell);
+function gameOver() {
+  running = false;
+  showOverlay(
+    'GAME OVER',
+    `危険ラインを越えました<br>SCORE: <b>${score}</b><br>注文クリア: <b>${orderNum - 1}</b>`,
+    'もう一度',
+    () => { startGame(); }
+  );
+}
+
+// ===== Physics =====
+function physicsStep(dt) {
+  const decay = Math.exp(-FRICTION_K * dt);
+  for (const d of drinks) {
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.vx *= decay;
+    d.vy *= decay;
+    if (Math.hypot(d.vx, d.vy) < MIN_SPEED) { d.vx = 0; d.vy = 0; }
+    if (d.x - d.radius < wallLeft) { d.x = wallLeft + d.radius; d.vx = -d.vx * WALL_BOUNCE_SIDE; }
+    else if (d.x + d.radius > wallRight) { d.x = wallRight - d.radius; d.vx = -d.vx * WALL_BOUNCE_SIDE; }
+    if (d.y - d.radius < 0) { d.y = d.radius; d.vy = 0; }
+    else if (d.y + d.radius > H) { d.y = H - d.radius; d.vy = 0; }
+  }
+  resolveCollisions();
+  for (let iter = 0; iter < 6; iter++) {
+    if (!doOneMerge()) break;
   }
 }
 
-function slide() {
-  if (busy) return;
-  if (board[LANE_SIZE - 1] !== null) {
-    gameOver('レーンが詰まりました');
-    return;
-  }
-  busy = true;
-
-  board[LANE_SIZE - 1] = preview;
-  preview = randomDrink();
-  holdUsed = false;
-
-  const enteredCells = new Set([LANE_SIZE - 1]);
-  const mergedCells = new Set();
-  let pos = LANE_SIZE - 1;
-
-  while (pos > 0) {
-    if (board[pos - 1] === null) {
-      board[pos - 1] = board[pos];
-      board[pos] = null;
-      enteredCells.delete(pos);
-      enteredCells.add(pos - 1);
-      pos--;
-    } else if (board[pos - 1] === board[pos] && board[pos] < MAX_LEVEL) {
-      const next = board[pos] + 1;
-      board[pos - 1] = next;
-      board[pos] = null;
-      enteredCells.delete(pos);
-      mergedCells.add(pos - 1);
-      const stage = STAGES[stageIdx];
-      if (next === stage.target) made++;
-      pos--;
-    } else {
-      break;
+function resolveCollisions() {
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < drinks.length; i++) {
+      for (let j = i + 1; j < drinks.length; j++) {
+        const a = drinks[i], b = drinks[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = a.radius + b.radius;
+        if (dist >= minDist) continue;
+        if (dist === 0) { a.x -= 0.5; b.x += 0.5; continue; }
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const overlap = minDist - dist;
+        const totalMass = a.mass + b.mass;
+        a.x -= nx * overlap * (b.mass / totalMass);
+        a.y -= ny * overlap * (b.mass / totalMass);
+        b.x += nx * overlap * (a.mass / totalMass);
+        b.y += ny * overlap * (a.mass / totalMass);
+        const dvx = b.vx - a.vx;
+        const dvy = b.vy - a.vy;
+        const rel = dvx * nx + dvy * ny;
+        if (rel < 0) {
+          const j2 = -(1 + COLL_E) * rel / (1 / a.mass + 1 / b.mass);
+          a.vx -= (j2 / a.mass) * nx;
+          a.vy -= (j2 / a.mass) * ny;
+          b.vx += (j2 / b.mass) * nx;
+          b.vy += (j2 / b.mass) * ny;
+        }
+      }
     }
   }
-
-  turnsLeft--;
-  render();
-
-  // animate
-  const cells = document.querySelectorAll('.cell');
-  enteredCells.forEach(p => {
-    const c = cells[p];
-    c.classList.remove('entered'); void c.offsetWidth; c.classList.add('entered');
-  });
-  mergedCells.forEach(p => {
-    const c = cells[p];
-    c.classList.remove('merged'); void c.offsetWidth; c.classList.add('merged');
-  });
-
-  setTimeout(() => {
-    busy = false;
-    const stage = STAGES[stageIdx];
-    if (made >= stage.count) {
-      stageClear();
-    } else if (turnsLeft <= 0) {
-      gameOver('ターン切れ');
-    } else if (board[LANE_SIZE - 1] !== null) {
-      gameOver('レーンが詰まりました');
-    }
-  }, 320);
 }
 
-function holdAction() {
-  if (busy || holdUsed) return;
-  if (hold === null) {
-    hold = preview;
-    preview = randomDrink();
+function doOneMerge() {
+  for (let i = 0; i < drinks.length; i++) {
+    for (let j = i + 1; j < drinks.length; j++) {
+      const a = drinks[i], b = drinks[j];
+      if (a.level !== b.level) continue;
+      if (a.level >= MAX_LEVEL) continue;
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      if (dist <= a.radius + b.radius + 1) {
+        const newLevel = a.level + 1;
+        const cx = (a.x + b.x) / 2;
+        const cy = (a.y + b.y) / 2;
+        const newDrink = new Drink(newLevel, cx, cy, (a.vx + b.vx) / 2, (a.vy + b.vy) / 2);
+        if (newDrink.x - newDrink.radius < wallLeft) newDrink.x = wallLeft + newDrink.radius;
+        if (newDrink.x + newDrink.radius > wallRight) newDrink.x = wallRight - newDrink.radius;
+        if (newDrink.y - newDrink.radius < 0) newDrink.y = newDrink.radius;
+        if (newDrink.y + newDrink.radius > H) newDrink.y = H - newDrink.radius;
+        drinks[i] = newDrink;
+        drinks.splice(j, 1);
+        unlocked.add(newLevel);
+        score += newLevel * 12;
+        mergeFlashes.push({ x: cx, y: cy, t: 0 });
+        if (order && newLevel === order.level) {
+          order.made++;
+          if (order.made >= order.count) {
+            const reward = 100 * order.level + 50 * order.count;
+            score += reward;
+            flashOrderClear(reward);
+            nextOrder();
+          }
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+const DANGER_Y = () => H - DANGER_PAD;
+function checkGameOver(dt) {
+  let bad = false;
+  const dy = DANGER_Y();
+  for (const d of drinks) {
+    if (d.y + d.radius * 0.4 > dy && Math.hypot(d.vx, d.vy) < 14) {
+      bad = true; break;
+    }
+  }
+  if (bad) {
+    dangerTimer += dt;
+    if (dangerTimer > 0.6) gameOver();
   } else {
-    [hold, preview] = [preview, hold];
+    dangerTimer = Math.max(0, dangerTimer - dt * 1.5);
   }
-  holdUsed = true;
+}
+
+// ===== Rendering =====
+function render() {
+  // outer bezel (table edge / wood frame)
+  const bezelGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bezelGrad.addColorStop(0, '#A87A4A');
+  bezelGrad.addColorStop(0.18, '#8B5A2B');
+  bezelGrad.addColorStop(1, '#5D3A1A');
+  ctx.fillStyle = bezelGrad;
+  ctx.fillRect(0, 0, W, H);
+  // subtle wood-grain stripes on bezel
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  for (let i = 0; i < 6; i++) {
+    const yy = (i / 6) * H + (i % 2) * 12;
+    ctx.fillRect(0, yy, wallLeft, 2);
+    ctx.fillRect(wallRight, yy, W - wallRight, 2);
+  }
+
+  // play area bright background
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#FFEED5');
+  grad.addColorStop(0.18, '#F5D08C');
+  grad.addColorStop(0.18, '#E0B070');
+  grad.addColorStop(1, '#B8884E');
+  ctx.fillStyle = grad;
+  const playW = wallRight - wallLeft;
+  ctx.fillRect(wallLeft, 0, playW, H);
+
+  // inner shadow lines along bezel edges
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.fillRect(wallLeft - 1, 0, 2, H);
+  ctx.fillRect(wallRight - 1, 0, 2, H);
+
+  // back wall hint shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.10)';
+  ctx.fillRect(wallLeft, 0, playW, 4);
+
+  // perspective lines within play area
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(wallLeft + playW * 0.06, H);
+  ctx.lineTo(wallLeft + playW * 0.38, 0);
+  ctx.moveTo(wallLeft + playW * 0.94, H);
+  ctx.lineTo(wallLeft + playW * 0.62, 0);
+  ctx.stroke();
+
+  // table edge under HUD
+  ctx.fillStyle = 'rgba(139, 90, 43, 0.18)';
+  ctx.fillRect(wallLeft, H * 0.18, playW, 1.5);
+
+  // danger line (within play area only)
+  const dyL = DANGER_Y();
+  const dangerAlpha = 0.35 + 0.5 * Math.min(1, dangerTimer / 0.6);
+  ctx.strokeStyle = `rgba(229, 57, 53, ${dangerAlpha})`;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 7]);
+  ctx.beginPath();
+  ctx.moveTo(wallLeft, dyL);
+  ctx.lineTo(wallRight, dyL);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // drinks
+  for (const d of drinks) drawDrinkAt(d.level, d.x, d.y);
+
+  // merge sparkles
+  for (let i = mergeFlashes.length - 1; i >= 0; i--) {
+    const f = mergeFlashes[i];
+    const alpha = 1 - f.t / 0.5;
+    if (alpha <= 0) { mergeFlashes.splice(i, 1); continue; }
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, 24 + f.t * 80, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 200, 80, ${alpha})`;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+
+  // aim guide
+  drawAimGuide();
+
+  // pedestal under player
+  const pr = RADIUS[player.level];
+  ctx.fillStyle = 'rgba(139, 90, 43, 0.28)';
+  ctx.beginPath();
+  ctx.ellipse(player.x, player.y + pr * 0.85, pr * 1.15, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // player drink
+  drawDrinkAt(player.level, player.x, player.y, 1.06);
+
+  // next preview at top-right corner of canvas
+  drawNextPreview();
+}
+
+function drawAimGuide() {
+  const dirX = Math.sin(aim);
+  const dirY = -Math.cos(aim);
+  const pr = RADIUS[player.level];
+  const startX = player.x + dirX * pr * 1.0;
+  const startY = player.y + dirY * pr * 1.0;
+  const len = Math.min(H * 0.55, 360);
+  const endX = startX + dirX * len;
+  const endY = startY + dirY * len;
+
+  // cone limit hint (faint arc)
+  if (aiming) {
+    ctx.strokeStyle = 'rgba(255, 140, 66, 0.22)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, len * 0.55, -Math.PI / 2 - ANGLE_LIMIT, -Math.PI / 2 + ANGLE_LIMIT);
+    ctx.stroke();
+    // boundary rays
+    ctx.strokeStyle = 'rgba(255, 140, 66, 0.16)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    for (const a of [-ANGLE_LIMIT, ANGLE_LIMIT]) {
+      const bx = player.x + Math.sin(a) * len;
+      const by = player.y + (-Math.cos(a)) * len;
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  // main aim line
+  ctx.strokeStyle = aiming ? 'rgba(229, 57, 53, 0.92)' : 'rgba(229, 57, 53, 0.5)';
+  ctx.lineWidth = aiming ? 6 : 4;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([14, 10]);
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // arrowhead
+  const ah = aiming ? 22 : 16;
+  ctx.fillStyle = aiming ? 'rgba(229, 57, 53, 0.95)' : 'rgba(229, 57, 53, 0.55)';
+  const px = -dirY, py = dirX;
+  ctx.beginPath();
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(endX - dirX * ah + px * ah * 0.55, endY - dirY * ah + py * ah * 0.55);
+  ctx.lineTo(endX - dirX * ah - px * ah * 0.55, endY - dirY * ah - py * ah * 0.55);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawDrinkAt(level, x, y, scale = 1) {
+  const img = drinkImages[level];
+  const r = RADIUS[level] * scale;
+  if (img) ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+  else {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `hsl(${30 + level * 25}, 70%, 60%)`;
+    ctx.fill();
+  }
+}
+
+function drawNextPreview() {
+  const r = Math.min(28, W * 0.07);
+  const x = W - r - 14;
+  const y = r + 14;
+  // bg
+  ctx.fillStyle = 'rgba(255, 248, 230, 0.92)';
+  ctx.beginPath();
+  ctx.roundRect(x - r - 6, y - r - 6, (r + 6) * 2, (r + 6) * 2 + 12, 8);
+  ctx.fill();
+  ctx.fillStyle = '#8B5A2B';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('NEXT', x, y + r + 12);
+  const img = drinkImages[nextLevel];
+  if (img) ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+}
+
+// ===== Loop =====
+function loop(t) {
+  if (!running) return;
+  const dtRaw = (t - lastTime) / 1000;
+  lastTime = t;
+  const dt = Math.min(0.033, dtRaw);
+
+  if (player.cooldown > 0) player.cooldown = Math.max(0, player.cooldown - dt);
+
+  physicsStep(dt);
+  for (const f of mergeFlashes) f.t += dt;
+  checkGameOver(dt);
+
   render();
+  updateHUD();
+
+  requestAnimationFrame(loop);
 }
 
-function stageClear() {
-  if (stageIdx + 1 >= STAGES.length) {
-    showOverlay('★ ALL CLEAR ★', '全ステージ達成!<br>カフェマージマスター!', '最初から', () => {
-      startGame();
-    });
-    return;
+// ===== HUD =====
+function buildRecipeBar() {
+  const bar = document.getElementById('recipe-bar');
+  bar.innerHTML = '';
+  for (let lv = 1; lv <= MAX_LEVEL; lv++) {
+    const cell = document.createElement('div');
+    cell.className = 'recipe-cell';
+    cell.innerHTML = svgFor(lv) + `<div class="lvnum">${lv}</div>`;
+    bar.appendChild(cell);
   }
-  const cleared = stageIdx + 1;
-  stageIdx++;
-  showOverlay(`STAGE ${cleared} CLEAR`, `次のお題:<br><b>${DRINKS[STAGES[stageIdx].target].name}</b> を ${STAGES[stageIdx].count}個 (${STAGES[stageIdx].turns}ターン)`, '続ける', () => {
-    startStage();
-    render();
-  });
 }
 
-function gameOver(reason) {
-  showOverlay('GAME OVER', `${reason}<br>到達ステージ: <b>${stageIdx + 1}</b>`, 'もう一度', () => {
-    startGame();
-  });
+function updateHUD() {
+  document.getElementById('score-value').textContent = score;
+  if (order) {
+    document.getElementById('order-name').textContent = DRINKS[order.level].name;
+    document.getElementById('order-progress').textContent = `${order.made}/${order.count}`;
+    document.getElementById('order-img').innerHTML = svgFor(order.level);
+  }
+  const recipeCells = document.querySelectorAll('.recipe-cell');
+  for (let lv = 1; lv <= MAX_LEVEL; lv++) {
+    if (recipeCells[lv - 1])
+      recipeCells[lv - 1].classList.toggle('unlocked', unlocked.has(lv));
+  }
+}
+
+function flashOrderClear(reward) {
+  const f = document.getElementById('order-flash');
+  f.textContent = `お渡し!  +${reward}`;
+  f.classList.remove('show');
+  void f.offsetWidth;
+  f.classList.add('show');
 }
 
 function showOverlay(title, body, btnText, btnAction) {
@@ -641,55 +987,121 @@ function showOverlay(title, body, btnText, btnAction) {
   document.body.appendChild(div);
 }
 
-function render() {
-  const stage = STAGES[stageIdx];
-  document.getElementById('stage-num').textContent = stageIdx + 1;
-  const turnsEl = document.getElementById('turns');
-  turnsEl.textContent = turnsLeft;
-  turnsEl.classList.toggle('low', turnsLeft <= 3);
-  document.getElementById('progress').textContent = `${made}/${stage.count}`;
-  document.getElementById('mission-text').innerHTML =
-    `<span class="target">${DRINKS[stage.target].name}</span> を ${stage.count}個 作る`;
-
-  const cells = document.querySelectorAll('.cell');
-  for (let i = 0; i < LANE_SIZE; i++) {
-    cells[i].innerHTML = board[i] !== null ? svgFor(board[i]) : '';
-  }
-
-  const holdSlot = document.getElementById('hold-slot');
-  holdSlot.innerHTML = '<div class="label">HOLD</div>' + (hold ? svgFor(hold) : '');
-  holdSlot.classList.toggle('disabled', holdUsed);
-  const previewSlot = document.getElementById('preview-slot');
-  previewSlot.innerHTML = '<div class="label">NEXT</div>' + (preview ? svgFor(preview) : '');
-
-  document.getElementById('hold-btn').disabled = holdUsed;
+// ===== Input (aim + release-to-fire) =====
+function pointerXY(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
-// ===== Input =====
-document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('slide-btn').addEventListener('click', slide);
-document.getElementById('hold-btn').addEventListener('click', holdAction);
+function updateAimFromPointer(e) {
+  const { x, y } = pointerXY(e);
+  const dx = x - player.x;
+  const dy = y - player.y;
+  let angle;
+  if (dy >= 0) {
+    // pointer below player — clamp to nearest edge of cone
+    angle = dx >= 0 ? ANGLE_LIMIT : -ANGLE_LIMIT;
+  } else {
+    angle = Math.atan2(dx, -dy);
+    angle = Math.max(-ANGLE_LIMIT, Math.min(ANGLE_LIMIT, angle));
+  }
+  aim = angle;
+}
 
+canvas.addEventListener('pointerdown', (e) => {
+  if (!running || player.cooldown > 0) return;
+  if (aiming) return;
+  e.preventDefault();
+  aiming = true;
+  aimPointerId = e.pointerId;
+  updateAimFromPointer(e);
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!aiming || e.pointerId !== aimPointerId) return;
+  updateAimFromPointer(e);
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (!aiming || e.pointerId !== aimPointerId) return;
+  try { canvas.releasePointerCapture(e.pointerId); } catch {}
+  aiming = false;
+  aimPointerId = null;
+  fireAtAim();
+});
+
+canvas.addEventListener('pointercancel', (e) => {
+  if (!aiming || e.pointerId !== aimPointerId) return;
+  try { canvas.releasePointerCapture(e.pointerId); } catch {}
+  aiming = false;
+  aimPointerId = null;
+});
+
+function fireAtAim() {
+  if (player.cooldown > 0) return;
+  const dirX = Math.sin(aim);
+  const dirY = -Math.cos(aim);
+  const vx = dirX * FIRE_SPEED;
+  const vy = dirY * FIRE_SPEED;
+  fire(vx, vy);
+  aim = 0;
+}
+
+function fire(vx, vy) {
+  if (player.cooldown > 0) return;
+  const r = RADIUS[player.level];
+  const d = new Drink(player.level, player.x, player.y - r * 0.2, vx, vy);
+  drinks.push(d);
+  unlocked.add(player.level);
+  player.level = nextLevel;
+  nextLevel = randomDrink();
+  player.cooldown = 0.18;
+}
+
+// ===== Title button =====
+document.getElementById('start-btn').addEventListener('click', startGame);
+
+// ===== Keyboard fallback =====
 document.addEventListener('keydown', (e) => {
   if (document.getElementById('game-screen').hidden) {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if ((e.key === 'Enter' || e.key === ' ') && !document.getElementById('title-screen').hidden) {
       e.preventDefault();
-      if (!document.getElementById('title-screen').hidden) startGame();
+      startGame();
     }
     return;
   }
   if (document.querySelector('.overlay')) return;
-  if (e.key === 'ArrowLeft' || e.key === ' ' || e.key === 'Enter') {
+  if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
     e.preventDefault();
-    slide();
-  } else if (e.key === 'Shift' || e.key === 'h' || e.key === 'H' || e.key === 'c' || e.key === 'C') {
-    e.preventDefault();
-    holdAction();
+    fireAtAim();
+  } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+    aim = Math.max(-ANGLE_LIMIT, aim - 0.08);
+  } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+    aim = Math.min(ANGLE_LIMIT, aim + 0.08);
   }
 });
 
-// title icon
-document.getElementById('title-icon').innerHTML = svgFor(7);
+// ===== Init =====
+preloadDrinks().then(() => {
+  document.getElementById('title-icon').innerHTML = svgFor(7);
+});
+
+// roundRect polyfill for older Safari
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y,   x + w, y + h, r);
+    this.arcTo(x + w, y + h, x,     y + h, r);
+    this.arcTo(x,     y + h, x,     y,     r);
+    this.arcTo(x,     y,     x + w, y,     r);
+    this.closePath();
+    return this;
+  };
+}
 </script>
 
 </body>
