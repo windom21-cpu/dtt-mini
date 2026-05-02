@@ -313,7 +313,7 @@
 </head>
 <body>
 
-<div id="version">v2.2.1 / build 2026-05-03-07</div>
+<div id="version">v2.2.2 / build 2026-05-03-08</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
@@ -356,8 +356,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.2.1';
-const BUILD   = '2026-05-03-07';
+const VERSION = 'v2.2.2';
+const BUILD   = '2026-05-03-08';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
@@ -391,8 +391,8 @@ const DANGER_PAD = 88;        // distance from canvas bottom for danger line
 const PLAYER_Y_PAD = 54;      // player drink center distance from canvas bottom
 
 // playable area bezel — narrower than full canvas to keep things from scattering
-const PLAY_INSET_PCT = 0.16;  // each side; 16% means 68% of W is playable
-const MAX_PLAY_WIDTH = 520;   // cap on play area width for very wide screens
+const PLAY_INSET_PCT = 0.20;  // each side; 20% means 60% of W is playable
+const MAX_PLAY_WIDTH = 460;   // cap on play area width for very wide screens
 
 // ===== SVG drinks =====
 function svgFor(level) {
@@ -709,6 +709,11 @@ function physicsStep(dt) {
   resolveCollisions();
   for (let iter = 0; iter < 6; iter++) {
     if (!doOneMerge()) break;
+  }
+  // No-forward-bounce rule: drinks never bounce back toward the player.
+  // Any velocity component pushing toward the bottom (player side) is absorbed.
+  for (const d of drinks) {
+    if (d.vy > 0) d.vy = 0;
   }
 }
 
