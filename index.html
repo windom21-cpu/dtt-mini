@@ -94,14 +94,15 @@
   #game-screen {
     flex-direction: column;
     gap: 4px;
-    padding: 4px;
+    padding: 4px 0 0 0;
     align-items: stretch;
   }
   #info-bar {
     display: flex;
     gap: 4px;
     flex-shrink: 0;
-    height: 72px;
+    height: 44px;
+    padding: 0 4px;
   }
   .info-stats {
     flex: 1;
@@ -113,43 +114,69 @@
     background: #20232b;
     border: 1px solid #353945;
     border-radius: 6px;
-    padding: 4px 6px;
+    padding: 2px 6px;
     text-align: center;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: baseline;
     justify-content: center;
+    gap: 6px;
     min-width: 0;
   }
-  .info-box.preview { width: 70px; padding: 2px; }
   .info-label {
     font-size: 10px;
     color: #8a90a0;
     letter-spacing: 1px;
-    margin-bottom: 2px;
   }
   .info-value {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     color: #fff;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
   }
-  .preview-canvas {
-    background: #1a1d24;
-    border: 1px solid #353945;
-    border-radius: 4px;
-    display: block;
-    width: 100%;
-    flex: 1;
-    min-height: 0;
-  }
   #board-wrap {
-    position: relative;
     flex: 1;
     min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  #board-frame {
+    position: relative;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    aspect-ratio: 1 / 2;
+  }
+  .board-info {
+    position: absolute;
+    top: 4px;
+    width: 28%;
+    background: rgba(20, 22, 28, 0.55);
+    border: 1px solid rgba(120, 130, 150, 0.35);
+    border-radius: 6px;
+    padding: 2px 3px 3px 3px;
+    z-index: 4;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  .board-info.hold { left: 4px; }
+  .board-info.next { right: 4px; }
+  .board-info .info-label {
+    display: block;
+    text-align: center;
+    margin-bottom: 2px;
+    color: #cdd;
+  }
+  .preview-canvas {
+    background: rgba(0, 0, 0, 0.35);
+    border: 0;
+    border-radius: 4px;
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
   }
   #board {
     background: #0e1015;
@@ -157,11 +184,8 @@
     border-radius: 4px;
     display: block;
     image-rendering: pixelated;
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
     height: 100%;
-    width: auto;
-    aspect-ratio: 1 / 2;
   }
   #pause-btn {
     position: absolute;
@@ -328,47 +352,49 @@
 <!-- ===================== Game screen ===================== -->
 <div id="game-screen" class="screen hidden">
   <div id="info-bar">
-    <div class="info-box preview">
-      <div class="info-label">HOLD</div>
-      <canvas id="hold-canvas" class="preview-canvas" width="80" height="80"></canvas>
-    </div>
     <div class="info-stats">
       <div class="info-box">
-        <div class="info-label">SCORE</div>
-        <div class="info-value" id="score-val">0</div>
+        <span class="info-label">SCORE</span>
+        <span class="info-value" id="score-val">0</span>
       </div>
       <div class="info-box">
-        <div class="info-label">LINES</div>
-        <div class="info-value" id="lines-val">0</div>
+        <span class="info-label">LINES</span>
+        <span class="info-value" id="lines-val">0</span>
       </div>
       <div class="info-box">
-        <div class="info-label">LV</div>
-        <div class="info-value" id="level-val">1</div>
+        <span class="info-label">LV</span>
+        <span class="info-value" id="level-val">1</span>
       </div>
-    </div>
-    <div class="info-box preview">
-      <div class="info-label">NEXT</div>
-      <canvas id="next-canvas" class="preview-canvas" width="80" height="80"></canvas>
     </div>
   </div>
 
   <div id="board-wrap">
-    <canvas id="board" width="200" height="400"></canvas>
-    <button id="pause-btn" title="一時停止">⏸</button>
-    <div id="pause-overlay" class="overlay hidden">
-      <div class="overlay-card">
-        <div class="overlay-title info">PAUSE</div>
-        <div class="overlay-sub">一時停止中</div>
-        <button class="overlay-btn" id="resume-btn">再開</button>
-        <button class="overlay-btn secondary" id="quit-btn">タイトルへ</button>
+    <div id="board-frame">
+      <canvas id="board" width="200" height="400"></canvas>
+      <div class="board-info hold">
+        <div class="info-label">HOLD</div>
+        <canvas id="hold-canvas" class="preview-canvas" width="80" height="80"></canvas>
       </div>
-    </div>
-    <div id="gameover-overlay" class="overlay hidden">
-      <div class="overlay-card">
-        <div class="overlay-title danger">GAME OVER</div>
-        <div class="overlay-sub">スコア: <span id="final-score">0</span></div>
-        <button class="overlay-btn" id="retry-btn">もう一度</button>
-        <button class="overlay-btn secondary" id="title-btn">タイトル</button>
+      <div class="board-info next">
+        <div class="info-label">NEXT</div>
+        <canvas id="next-canvas" class="preview-canvas" width="80" height="80"></canvas>
+      </div>
+      <button id="pause-btn" title="一時停止">⏸</button>
+      <div id="pause-overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <div class="overlay-title info">PAUSE</div>
+          <div class="overlay-sub">一時停止中</div>
+          <button class="overlay-btn" id="resume-btn">再開</button>
+          <button class="overlay-btn secondary" id="quit-btn">タイトルへ</button>
+        </div>
+      </div>
+      <div id="gameover-overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <div class="overlay-title danger">GAME OVER</div>
+          <div class="overlay-sub">スコア: <span id="final-score">0</span></div>
+          <button class="overlay-btn" id="retry-btn">もう一度</button>
+          <button class="overlay-btn secondary" id="title-btn">タイトル</button>
+        </div>
       </div>
     </div>
   </div>
@@ -388,7 +414,7 @@
   </div>
 </div>
 
-<div id="version">v1.1.0 / build 2026-05-02-02</div>
+<div id="version">v1.3.0 / build 2026-05-02-04</div>
 
 <script>
 'use strict';
@@ -396,8 +422,8 @@
 // ============================================================
 // けとるす — Tetris-like falling game
 // ============================================================
-const VERSION = 'v1.1.0';
-const BUILD   = '2026-05-02-02';
+const VERSION = 'v1.3.0';
+const BUILD   = '2026-05-02-04';
 console.log('けとるす ' + VERSION + ' build ' + BUILD);
 
 const COLS = 10;
