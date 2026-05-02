@@ -414,7 +414,7 @@
   </div>
 </div>
 
-<div id="version">v1.3.0 / build 2026-05-02-04</div>
+<div id="version">v1.4.0 / build 2026-05-02-05</div>
 
 <script>
 'use strict';
@@ -422,8 +422,8 @@
 // ============================================================
 // けとるす — Tetris-like falling game
 // ============================================================
-const VERSION = 'v1.3.0';
-const BUILD   = '2026-05-02-04';
+const VERSION = 'v1.4.0';
+const BUILD   = '2026-05-02-05';
 console.log('けとるす ' + VERSION + ' build ' + BUILD);
 
 const COLS = 10;
@@ -800,6 +800,26 @@ document.addEventListener('keydown', (e) => {
   }
   drawBoard();
 });
+
+// Tap anywhere on the board to rotate.
+(() => {
+  const el = boardCanvas;
+  let usedTouch = false;
+  const rotate = (e) => {
+    if (!running || paused) return;
+    if (e.cancelable) e.preventDefault();
+    tryRotate();
+    drawBoard();
+  };
+  el.addEventListener('touchstart', (e) => {
+    usedTouch = true;
+    rotate(e);
+  }, { passive: false });
+  el.addEventListener('click', (e) => {
+    if (usedTouch) return; // avoid double-fire on touch devices
+    rotate(e);
+  });
+})();
 
 document.querySelectorAll('#touch-controls button[data-act]').forEach(btn => {
   const act = btn.dataset.act;
