@@ -75,7 +75,7 @@
     <div>スコア: <span id="score">0</span> &nbsp;/&nbsp; ハイ: <span id="hiscore">0</span></div>
     <div>残り: <span id="time">30</span>秒</div>
   </div>
-  <div id="version">v1.0.0</div>
+  <div id="version">v1.1.0</div>
   <div id="overlay">
     <h1 id="title">的当てゲーム</h1>
     <p id="desc">右から流れてくる的をクリック / タップで撃ち落とそう!<br>制限時間は30秒。</p>
@@ -102,10 +102,10 @@
   const diffBtns = document.querySelectorAll('.diffBtn');
 
   const DIFFICULTIES = {
-    easy:   { label: 'やさしい',  rMin: 26, rRand: 26, sBase: 70,  sRand: 110, sRamp: 3,  intvBase: 950,  intvMin: 380, intvRamp: 16, tap: 22, bombChance: 0.08, bombPenalty: 4  },
-    normal: { label: 'ふつう',    rMin: 16, rRand: 24, sBase: 100, sRand: 160, sRamp: 5,  intvBase: 720,  intvMin: 230, intvRamp: 20, tap: 14, bombChance: 0.12, bombPenalty: 6  },
-    hard:   { label: 'むつかしい', rMin: 14, rRand: 18, sBase: 120, sRand: 180, sRamp: 6,  intvBase: 600,  intvMin: 200, intvRamp: 22, tap: 10, bombChance: 0.18, bombPenalty: 8  },
-    oni:    { label: '鬼',        rMin: 10, rRand: 14, sBase: 180, sRand: 240, sRamp: 10, intvBase: 380,  intvMin: 130, intvRamp: 28, tap: 4,  bombChance: 0.25, bombPenalty: 12 },
+    easy:   { label: 'やさしい',  rMin: 26, rRand: 26, sBase: 70,  sRand: 110, sRamp: 3,  intvBase: 950,  intvMin: 380, intvRamp: 16, tap: 22, bombChance: 0.08, bombPenalty: 4,  iceChance: 0.10 },
+    normal: { label: 'ふつう',    rMin: 16, rRand: 24, sBase: 100, sRand: 160, sRamp: 5,  intvBase: 720,  intvMin: 230, intvRamp: 20, tap: 14, bombChance: 0.12, bombPenalty: 6,  iceChance: 0.12 },
+    hard:   { label: 'むつかしい', rMin: 14, rRand: 18, sBase: 120, sRand: 180, sRamp: 6,  intvBase: 600,  intvMin: 200, intvRamp: 22, tap: 10, bombChance: 0.18, bombPenalty: 8,  iceChance: 0.12 },
+    oni:    { label: '鬼',        rMin: 10, rRand: 14, sBase: 180, sRand: 240, sRamp: 10, intvBase: 380,  intvMin: 130, intvRamp: 28, tap: 4,  bombChance: 0.25, bombPenalty: 12, iceChance: 0.10 },
   };
   const DIFF_ORDER = ['easy', 'normal', 'hard', 'oni'];
   let cfg = DIFFICULTIES.normal;
@@ -172,6 +172,7 @@
 
   function spawnTarget() {
     const isBomb = Math.random() < cfg.bombChance;
+    const isIce = !isBomb && Math.random() < cfg.iceChance;
     const r = isBomb
       ? Math.max(18, cfg.rMin + Math.random() * cfg.rRand * 0.7)
       : cfg.rMin + Math.random() * cfg.rRand;
@@ -182,7 +183,7 @@
     const y = maxY > minY ? minY + Math.random() * (maxY - minY) : H / 2;
     const speed = cfg.sBase + Math.random() * cfg.sRand + (30 - timeLeft) * cfg.sRamp;
     const hue = Math.floor(Math.random() * 360);
-    targets.push({ x: W + r, y, r, vx: -speed, hue, alive: true, bomb: isBomb });
+    targets.push({ x: W + r, y, r, vx: -speed, hue, alive: true, bomb: isBomb, ice: isIce, frozen: false });
   }
 
   function spawnParticles(x, y, hue) {
@@ -196,6 +197,21 @@
         life: 0.6,
         age: 0,
         hue,
+      });
+    }
+  }
+
+  function spawnIceBurst(x, y, count, big) {
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = (big ? 150 : 70) + Math.random() * (big ? 220 : 120);
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        life: big ? 0.7 : 0.45,
+        age: 0,
+        hue: 195 + Math.random() * 25,
       });
     }
   }
@@ -232,18 +248,30 @@
       const dx = x - t.x, dy = y - t.y;
       const hitR = t.r + cfg.tap;
       if (dx * dx + dy * dy <= hitR * hitR) {
-        t.alive = false;
+        hitOne = true;
         if (t.bomb) {
+          t.alive = false;
           spawnBombParticles(t.x, t.y);
           score = Math.max(0, score - cfg.bombPenalty);
           triggerExplosion();
+          targets.splice(i, 1);
+        } else if (t.ice && !t.frozen) {
+          t.frozen = true;
+          t.vx = 0;
+          spawnIceBurst(t.x, t.y, 8, false);
+          score += 1;
+        } else if (t.ice) {
+          t.alive = false;
+          spawnIceBurst(t.x, t.y, 18, true);
+          score += Math.max(2, Math.round(50 / t.r * 10) * 2);
+          targets.splice(i, 1);
         } else {
+          t.alive = false;
           spawnParticles(t.x, t.y, t.hue);
           score += Math.max(1, Math.round(50 / t.r * 10));
+          targets.splice(i, 1);
         }
         scoreEl.textContent = score;
-        targets.splice(i, 1);
-        hitOne = true;
         break;
       }
     }
@@ -278,6 +306,7 @@
 
   function drawTarget(t) {
     if (t.bomb) { drawBomb(t); return; }
+    if (t.ice)  { drawIce(t);  return; }
     const { x, y, r, hue } = t;
     ctx.save();
     ctx.translate(x, y);
@@ -297,6 +326,45 @@
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawIce(t) {
+    const { x, y, r, frozen } = t;
+    ctx.save();
+    ctx.translate(x, y);
+    if (frozen) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 220);
+      ctx.fillStyle = `rgba(200,235,255,${0.18 + pulse * 0.18})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.15, 0, 0, r);
+    grad.addColorStop(0, '#ecfaff');
+    grad.addColorStop(0.6, '#7fcdff');
+    grad.addColorStop(1, '#3a8fd1');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = frozen ? '#ffffff' : 'rgba(220,245,255,0.95)';
+    ctx.lineWidth = frozen ? Math.max(4, r * 0.15) : 3;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineWidth = Math.max(2, r * 0.11);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.16, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
