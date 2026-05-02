@@ -1,6 +1,6 @@
 # 引き継ぎ書 — カフェマージ (cafe-merge)
 
-最終更新: 2026-05-03 / 現行バージョン: v2.3.0
+最終更新: 2026-05-03 / 現行バージョン: v2.3.3
 
 ---
 
@@ -189,6 +189,9 @@ build 文字列は console にも出力 (DevTools のキャッシュ確認用)�
 - v2.2.4 — `VISIBLE_FACTOR` 導入(衝突半径 = 描画半径 × 各Lvのカップ実体率)で見えない padding を撤廃
 - v2.2.5 — `baseUnit` 約2倍 (`playW/4.5, H/10.5`) で Lv8 が play area の ~64% を占める迫力に
 - v2.3.0 — Lv9 シェイクタワー / Lv10 ゴールデンチャリスを追加 (MAX_LEVEL 8 → 10)、注文難度に新ターゲットを追加、レシピ図鑑を10セル対応
+- v2.3.1 — タイトル画面の中身を一時的に削減 (失敗・すぐ revert): サブタイトル/ルールを撤去し flex column 化、max-width 480→360 に
+- v2.3.2 — **タイトル/ゲーム画面の同時表示バグ修正**。`#game-screen { display: flex }` の specificity が `[hidden]` 属性に勝っていて、タイトル画面の右側にゲーム画面の HUD が表示されていた。グローバル `[hidden] { display: none !important; }` で解決。サブタイトル/ルールも復活
+- v2.3.3 — タイトル文字列「カフェマージ」が幅広端末で折り返していたのを修正。font-size 上限 60→52px、`white-space: nowrap`、max-width 360→420 に
 
 ---
 
@@ -337,6 +340,11 @@ Loop
 - `BACK_PULL` は常時かかっているので、奥壁に押し付けられたドリンクは 1 フレームごとに微小 vy がリセットされる (実害なし、性能影響もごく軽微)
 - 画面回転で `resize` イベントは発火するが、既存ドリンクの位置は再配置しない (それなりに自然に追従はする)
 - レシピ図鑑(下部バー)はタップで詳細を見るなどの機能はなし
+
+## 実装の落とし穴 (踏み抜いたメモ)
+
+- **`[hidden]` 属性は ID セレクタの `display: ...` に負ける**。`#title-screen { display: flex }` のような ID 付き display 指定をしている要素には、HTML の `hidden` 属性をつけても `display: none` が適用されない。これに気付かず title-screen と game-screen が同時に body の flex 内で並んで表示され、「右側に HUD が見える」状態になっていた。グローバルに `[hidden] { display: none !important; }` を入れて吸収済み。今後 ID + display を持つ要素を hide したい場合はこの仕組みに依存していい
+- **タイトル h1 のフォントが clamp() で大きくなる**ぶん、コンテナ max-width とのバランスを取らないと折り返す。`white-space: nowrap` を入れている
 
 ---
 
