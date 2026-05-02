@@ -313,7 +313,7 @@
 </head>
 <body>
 
-<div id="version">v2.2.4 / build 2026-05-03-10</div>
+<div id="version">v2.2.5 / build 2026-05-03-11</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
@@ -356,8 +356,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.2.4';
-const BUILD   = '2026-05-03-10';
+const VERSION = 'v2.2.5';
+const BUILD   = '2026-05-03-11';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
@@ -630,8 +630,10 @@ function recomputeBounds() {
 
 function recomputeRadii() {
   const playW = wallRight - wallLeft;
-  // bigger drinks → tighter table, real game-over pressure
-  const baseUnit = Math.min(playW / 9, H / 15);
+  // anchor on Lv8 (parfait): one of those should look like it almost
+  // overflows the play area. Smaller drinks scale down from there.
+  // Lv8 visible diameter ≈ playW * 0.64 (with VISIBLE_FACTOR[8]=0.58 and ratio 2.5)
+  const baseUnit = Math.min(playW / 4.5, H / 10.5);
   for (let lv = 1; lv <= MAX_LEVEL; lv++) {
     RADIUS[lv] = baseUnit * RADIUS_RATIO[lv];
   }
