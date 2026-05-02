@@ -52,10 +52,14 @@
 
   /* Title */
   #title-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
     padding: 28px 20px;
     width: 100%;
-    max-width: 480px;
+    max-width: 360px;
+    gap: 14px;
   }
   #title-screen h1 {
     font-size: clamp(36px, 9vw, 60px);
@@ -316,22 +320,12 @@
 </head>
 <body>
 
-<div id="version">v2.3.0 / build 2026-05-03-12</div>
+<div id="version">v2.3.1 / build 2026-05-03-13</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
   <h1>カフェマージ</h1>
-  <div class="subtitle">ガイドの方向を決めて、<br>放したら発射!</div>
-  <div id="rules">
-    <b>遊び方</b><br>
-    ・ 画面に <b>触れて方向を狙う</b> → <b>放すと発射</b><br>
-    ・ 真上から左右60度の範囲内のみ撃てる<br>
-    ・ ぶつかった同種は <b>合体</b> (連鎖もする)<br>
-    ・ <b>テイクアウト</b> の注文を捌くと得点<br>
-    ・ 危険ライン(赤点線)まで押し戻されたら終了
-  </div>
   <div id="hs-bar"><span class="label">ハイスコア</span><span class="value" id="hs-value">0</span></div>
-  <br>
   <button id="start-btn" class="btn">スタート</button>
 </div>
 
@@ -359,8 +353,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.3.0';
-const BUILD   = '2026-05-03-12';
+const VERSION = 'v2.3.1';
+const BUILD   = '2026-05-03-13';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
