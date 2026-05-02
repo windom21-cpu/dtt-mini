@@ -59,15 +59,16 @@
     text-align: center;
     padding: 28px 20px;
     width: 100%;
-    max-width: 360px;
+    max-width: 420px;
     gap: 14px;
   }
   #title-screen h1 {
-    font-size: clamp(36px, 9vw, 60px);
+    font-size: clamp(32px, 8vw, 52px);
     color: var(--accent-dark);
-    margin: 12px 0 6px;
+    margin: 8px 0 6px;
     letter-spacing: 0.08em;
     text-shadow: 0 2px 8px rgba(255, 200, 130, 0.5);
+    white-space: nowrap;
   }
   #title-screen .subtitle {
     font-size: 14px;
@@ -321,7 +322,7 @@
 </head>
 <body>
 
-<div id="version">v2.3.2 / build 2026-05-03-14</div>
+<div id="version">v2.3.3 / build 2026-05-03-15</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
@@ -363,8 +364,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.3.2';
-const BUILD   = '2026-05-03-14';
+const VERSION = 'v2.3.3';
+const BUILD   = '2026-05-03-15';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
