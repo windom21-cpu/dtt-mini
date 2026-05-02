@@ -15,7 +15,7 @@
     -webkit-tap-highlight-color: transparent;
     user-select: none;
   }
-  #wrap { position: relative; width: 100vw; height: 100vh; }
+  #wrap { position: relative; width: 100%; height: 100%; }
   canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
   #hud {
     position: absolute; top: 12px; left: 12px; right: 12px;
@@ -71,15 +71,34 @@
   const startBtn = document.getElementById('startBtn');
 
   let W = 0, H = 0, dpr = 1;
+  const wrap = document.getElementById('wrap');
+  function viewportSize() {
+    const vv = window.visualViewport;
+    return {
+      w: vv ? vv.width : window.innerWidth,
+      h: vv ? vv.height : window.innerHeight,
+    };
+  }
   function resize() {
     dpr = window.devicePixelRatio || 1;
-    W = window.innerWidth;
-    H = window.innerHeight;
+    const v = viewportSize();
+    W = v.w;
+    H = v.h;
+    document.documentElement.style.height = H + 'px';
+    document.body.style.height = H + 'px';
+    wrap.style.width = W + 'px';
+    wrap.style.height = H + 'px';
     canvas.width = W * dpr;
     canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   window.addEventListener('resize', resize);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resize);
+    window.visualViewport.addEventListener('scroll', resize);
+  }
   resize();
 
   const targets = [];
