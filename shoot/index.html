@@ -35,14 +35,22 @@
   #overlay.hidden { display: none; }
   #overlay h1 { font-size: clamp(24px, 6vw, 48px); margin-bottom: 12px; }
   #overlay p { font-size: clamp(14px, 3vw, 18px); margin-bottom: 24px; opacity: .85; }
-  #startBtn {
-    font-size: 20px; padding: 14px 32px;
-    background: #ff4d6d; color: #fff;
-    border: none; border-radius: 999px;
-    cursor: pointer; font-weight: 700;
-    box-shadow: 0 6px 20px rgba(255,77,109,.5);
+  #diffWrap {
+    display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 12px; width: min(360px, 90vw);
   }
-  #startBtn:active { transform: scale(.96); }
+  .diffBtn {
+    font-size: 18px; padding: 14px 18px;
+    color: #fff; border: none; border-radius: 14px;
+    cursor: pointer; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  }
+  .diffBtn:active { transform: scale(.96); }
+  .diffBtn[data-diff="easy"]   { background: #38b000; box-shadow: 0 4px 14px rgba(56,176,0,.45); }
+  .diffBtn[data-diff="normal"] { background: #2a9df4; box-shadow: 0 4px 14px rgba(42,157,244,.45); }
+  .diffBtn[data-diff="hard"]   { background: #ff8800; box-shadow: 0 4px 14px rgba(255,136,0,.45); }
+  .diffBtn[data-diff="oni"]    { background: #c1121f; box-shadow: 0 4px 14px rgba(193,18,31,.5); }
+  .diffLabel { font-size: 14px; opacity: .9; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -55,7 +63,13 @@
   <div id="overlay">
     <h1 id="title">的当てゲーム</h1>
     <p id="desc">右から流れてくる的をクリック / タップで撃ち落とそう!<br>制限時間は30秒。</p>
-    <button id="startBtn">スタート</button>
+    <div class="diffLabel">難易度を選択</div>
+    <div id="diffWrap">
+      <button class="diffBtn" data-diff="easy">やさしい</button>
+      <button class="diffBtn" data-diff="normal">ふつう</button>
+      <button class="diffBtn" data-diff="hard">むつかしい</button>
+      <button class="diffBtn" data-diff="oni">鬼</button>
+    </div>
   </div>
 </div>
 
@@ -68,7 +82,15 @@
   const overlay = document.getElementById('overlay');
   const titleEl = document.getElementById('title');
   const descEl = document.getElementById('desc');
-  const startBtn = document.getElementById('startBtn');
+  const diffBtns = document.querySelectorAll('.diffBtn');
+
+  const DIFFICULTIES = {
+    easy:   { label: 'やさしい',  rMin: 32, rRand: 28, sBase: 50,  sRand: 80,  sRamp: 2,  intvBase: 1100, intvMin: 500, intvRamp: 12, tap: 28 },
+    normal: { label: 'ふつう',    rMin: 20, rRand: 28, sBase: 80,  sRand: 140, sRamp: 4,  intvBase: 900,  intvMin: 280, intvRamp: 18, tap: 18 },
+    hard:   { label: 'むつかしい', rMin: 14, rRand: 18, sBase: 120, sRand: 180, sRamp: 6,  intvBase: 600,  intvMin: 200, intvRamp: 22, tap: 10 },
+    oni:    { label: '鬼',        rMin: 10, rRand: 14, sBase: 180, sRand: 240, sRamp: 10, intvBase: 380,  intvMin: 130, intvRamp: 28, tap: 4  },
+  };
+  let cfg = DIFFICULTIES.normal;
 
   let W = 0, H = 0, dpr = 1;
   const wrap = document.getElementById('wrap');
@@ -112,13 +134,13 @@
   let timerId = null;
 
   function spawnTarget() {
-    const r = 20 + Math.random() * 28;
+    const r = cfg.rMin + Math.random() * cfg.rRand;
     const topPad = 56;
     const bottomPad = 72;
     const minY = r + topPad;
     const maxY = H - r - bottomPad;
     const y = maxY > minY ? minY + Math.random() * (maxY - minY) : H / 2;
-    const speed = 80 + Math.random() * 140 + (30 - timeLeft) * 4;
+    const speed = cfg.sBase + Math.random() * cfg.sRand + (30 - timeLeft) * cfg.sRamp;
     const hue = Math.floor(Math.random() * 360);
     targets.push({ x: W + r, y, r, vx: -speed, hue, alive: true });
   }
@@ -144,7 +166,7 @@
       const t = targets[i];
       if (!t.alive) continue;
       const dx = x - t.x, dy = y - t.y;
-      const hitR = t.r + 18;
+      const hitR = t.r + cfg.tap;
       if (dx * dx + dy * dy <= hitR * hitR) {
         t.alive = false;
         spawnParticles(t.x, t.y, t.hue);
@@ -210,7 +232,7 @@
 
   function update(dt) {
     lastSpawn += dt * 1000;
-    const interval = Math.max(280, spawnInterval - (30 - timeLeft) * 18);
+    const interval = Math.max(cfg.intvMin, cfg.intvBase - (30 - timeLeft) * cfg.intvRamp);
     if (lastSpawn >= interval) {
       lastSpawn = 0;
       spawnTarget();
@@ -264,7 +286,8 @@
     requestAnimationFrame(loop);
   }
 
-  function start() {
+  function start(diffKey) {
+    cfg = DIFFICULTIES[diffKey] || DIFFICULTIES.normal;
     score = 0;
     timeLeft = 30;
     targets.length = 0;
@@ -287,12 +310,11 @@
     running = false;
     clearInterval(timerId);
     titleEl.textContent = '終了!';
-    descEl.innerHTML = `スコア: <b>${score}</b><br>もう一度遊べます。`;
-    startBtn.textContent = 'もう一度';
+    descEl.innerHTML = `難易度: <b>${cfg.label}</b><br>スコア: <b>${score}</b><br>もう一度難易度を選んで遊べます。`;
     overlay.classList.remove('hidden');
   }
 
-  startBtn.addEventListener('click', start);
+  diffBtns.forEach(btn => btn.addEventListener('click', () => start(btn.dataset.diff)));
 })();
 </script>
 </body>
