@@ -57,7 +57,7 @@
 <div id="wrap">
   <canvas id="game"></canvas>
   <div id="hud">
-    <div>スコア: <span id="score">0</span></div>
+    <div>スコア: <span id="score">0</span> &nbsp;/&nbsp; ハイ: <span id="hiscore">0</span></div>
     <div>残り: <span id="time">30</span>秒</div>
   </div>
   <div id="overlay">
@@ -78,6 +78,7 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const scoreEl = document.getElementById('score');
+  const hiscoreEl = document.getElementById('hiscore');
   const timeEl = document.getElementById('time');
   const overlay = document.getElementById('overlay');
   const titleEl = document.getElementById('title');
@@ -85,12 +86,29 @@
   const diffBtns = document.querySelectorAll('.diffBtn');
 
   const DIFFICULTIES = {
-    easy:   { label: 'やさしい',  rMin: 32, rRand: 28, sBase: 50,  sRand: 80,  sRamp: 2,  intvBase: 1100, intvMin: 500, intvRamp: 12, tap: 28 },
-    normal: { label: 'ふつう',    rMin: 20, rRand: 28, sBase: 80,  sRand: 140, sRamp: 4,  intvBase: 900,  intvMin: 280, intvRamp: 18, tap: 18 },
+    easy:   { label: 'やさしい',  rMin: 26, rRand: 26, sBase: 70,  sRand: 110, sRamp: 3,  intvBase: 950,  intvMin: 380, intvRamp: 16, tap: 22 },
+    normal: { label: 'ふつう',    rMin: 16, rRand: 24, sBase: 100, sRand: 160, sRamp: 5,  intvBase: 720,  intvMin: 230, intvRamp: 20, tap: 14 },
     hard:   { label: 'むつかしい', rMin: 14, rRand: 18, sBase: 120, sRand: 180, sRamp: 6,  intvBase: 600,  intvMin: 200, intvRamp: 22, tap: 10 },
     oni:    { label: '鬼',        rMin: 10, rRand: 14, sBase: 180, sRand: 240, sRamp: 10, intvBase: 380,  intvMin: 130, intvRamp: 28, tap: 4  },
   };
+  const DIFF_ORDER = ['easy', 'normal', 'hard', 'oni'];
   let cfg = DIFFICULTIES.normal;
+  let curDiffKey = 'normal';
+
+  const HS_KEY = 'dtt-mini-shoot:hi:v1';
+  function loadHi() {
+    try { return JSON.parse(localStorage.getItem(HS_KEY) || '{}'); }
+    catch (e) { return {}; }
+  }
+  function saveHi(map) {
+    try { localStorage.setItem(HS_KEY, JSON.stringify(map)); } catch (e) {}
+  }
+  function getHi(diff) { return loadHi()[diff] || 0; }
+  function setHi(diff, v) {
+    const m = loadHi();
+    m[diff] = v;
+    saveHi(m);
+  }
 
   let W = 0, H = 0, dpr = 1;
   const wrap = document.getElementById('wrap');
@@ -287,7 +305,8 @@
   }
 
   function start(diffKey) {
-    cfg = DIFFICULTIES[diffKey] || DIFFICULTIES.normal;
+    curDiffKey = (diffKey in DIFFICULTIES) ? diffKey : 'normal';
+    cfg = DIFFICULTIES[curDiffKey];
     score = 0;
     timeLeft = 30;
     targets.length = 0;
@@ -295,6 +314,7 @@
     lastSpawn = 0;
     lastTime = 0;
     scoreEl.textContent = score;
+    hiscoreEl.textContent = getHi(curDiffKey);
     timeEl.textContent = timeLeft;
     overlay.classList.add('hidden');
     running = true;
@@ -306,14 +326,31 @@
     }, 1000);
   }
 
+  function hiTable() {
+    const rows = DIFF_ORDER.map(k => {
+      const cur = (k === curDiffKey) ? ' style="font-weight:700"' : '';
+      return `<tr${cur}><td style="text-align:left;padding:2px 10px">${DIFFICULTIES[k].label}</td><td style="text-align:right;padding:2px 10px">${getHi(k)}</td></tr>`;
+    }).join('');
+    return `<table style="margin:10px auto;font-size:14px;opacity:.95"><tbody>${rows}</tbody></table>`;
+  }
+
   function end() {
     running = false;
     clearInterval(timerId);
-    titleEl.textContent = '終了!';
-    descEl.innerHTML = `難易度: <b>${cfg.label}</b><br>スコア: <b>${score}</b><br>もう一度難易度を選んで遊べます。`;
+    const prev = getHi(curDiffKey);
+    const isNew = score > prev;
+    if (isNew) setHi(curDiffKey, score);
+    hiscoreEl.textContent = getHi(curDiffKey);
+    titleEl.textContent = isNew ? '🏆 新記録!' : '終了!';
+    descEl.innerHTML =
+      `難易度: <b>${cfg.label}</b> &nbsp;/&nbsp; スコア: <b>${score}</b>` +
+      (isNew ? `<br><span style="color:#ffd166">前回ベスト ${prev} を更新!</span>` : '') +
+      hiTable() +
+      `もう一度難易度を選んで遊べます。`;
     overlay.classList.remove('hidden');
   }
 
+  hiscoreEl.textContent = getHi('normal');
   diffBtns.forEach(btn => btn.addEventListener('click', () => start(btn.dataset.diff)));
 })();
 </script>
