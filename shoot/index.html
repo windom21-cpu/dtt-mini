@@ -24,6 +24,13 @@
     text-shadow: 0 2px 4px rgba(0,0,0,.6);
     pointer-events: none;
   }
+  @keyframes scorePunch {
+    0%   { transform: scale(1.6) translateX(-6px); color: #ff4d4d; }
+    25%  { transform: scale(1.6) translateX(6px);  color: #ff4d4d; }
+    50%  { transform: scale(1.4) translateX(-4px); color: #ff8888; }
+    100% { transform: scale(1) translateX(0);      color: #fff; }
+  }
+  #score.punch { display: inline-block; animation: scorePunch .45s ease-out; }
   #overlay {
     position: absolute; inset: 0;
     display: flex; flex-direction: column;
@@ -86,10 +93,10 @@
   const diffBtns = document.querySelectorAll('.diffBtn');
 
   const DIFFICULTIES = {
-    easy:   { label: 'やさしい',  rMin: 26, rRand: 26, sBase: 70,  sRand: 110, sRamp: 3,  intvBase: 950,  intvMin: 380, intvRamp: 16, tap: 22 },
-    normal: { label: 'ふつう',    rMin: 16, rRand: 24, sBase: 100, sRand: 160, sRamp: 5,  intvBase: 720,  intvMin: 230, intvRamp: 20, tap: 14 },
-    hard:   { label: 'むつかしい', rMin: 14, rRand: 18, sBase: 120, sRand: 180, sRamp: 6,  intvBase: 600,  intvMin: 200, intvRamp: 22, tap: 10 },
-    oni:    { label: '鬼',        rMin: 10, rRand: 14, sBase: 180, sRand: 240, sRamp: 10, intvBase: 380,  intvMin: 130, intvRamp: 28, tap: 4  },
+    easy:   { label: 'やさしい',  rMin: 26, rRand: 26, sBase: 70,  sRand: 110, sRamp: 3,  intvBase: 950,  intvMin: 380, intvRamp: 16, tap: 22, bombChance: 0.08, bombPenalty: 4  },
+    normal: { label: 'ふつう',    rMin: 16, rRand: 24, sBase: 100, sRand: 160, sRamp: 5,  intvBase: 720,  intvMin: 230, intvRamp: 20, tap: 14, bombChance: 0.12, bombPenalty: 6  },
+    hard:   { label: 'むつかしい', rMin: 14, rRand: 18, sBase: 120, sRand: 180, sRamp: 6,  intvBase: 600,  intvMin: 200, intvRamp: 22, tap: 10, bombChance: 0.18, bombPenalty: 8  },
+    oni:    { label: '鬼',        rMin: 10, rRand: 14, sBase: 180, sRand: 240, sRamp: 10, intvBase: 380,  intvMin: 130, intvRamp: 28, tap: 4,  bombChance: 0.25, bombPenalty: 12 },
   };
   const DIFF_ORDER = ['easy', 'normal', 'hard', 'oni'];
   let cfg = DIFFICULTIES.normal;
@@ -151,9 +158,14 @@
   let lastTime = 0;
   let timerId = null;
   let secondStart = 0;
+  let shakeUntil = 0;
+  let flashStart = -9999;
 
   function spawnTarget() {
-    const r = cfg.rMin + Math.random() * cfg.rRand;
+    const isBomb = Math.random() < cfg.bombChance;
+    const r = isBomb
+      ? Math.max(18, cfg.rMin + Math.random() * cfg.rRand * 0.7)
+      : cfg.rMin + Math.random() * cfg.rRand;
     const topPad = 56;
     const bottomPad = 72;
     const minY = r + topPad;
@@ -161,7 +173,7 @@
     const y = maxY > minY ? minY + Math.random() * (maxY - minY) : H / 2;
     const speed = cfg.sBase + Math.random() * cfg.sRand + (30 - timeLeft) * cfg.sRamp;
     const hue = Math.floor(Math.random() * 360);
-    targets.push({ x: W + r, y, r, vx: -speed, hue, alive: true });
+    targets.push({ x: W + r, y, r, vx: -speed, hue, alive: true, bomb: isBomb });
   }
 
   function spawnParticles(x, y, hue) {
@@ -179,6 +191,30 @@
     }
   }
 
+  function spawnBombParticles(x, y) {
+    for (let i = 0; i < 30; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 200 + Math.random() * 400;
+      const hue = 10 + Math.random() * 35;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        life: 0.9,
+        age: 0,
+        hue,
+      });
+    }
+  }
+
+  function triggerExplosion() {
+    shakeUntil = performance.now() + 300;
+    flashStart = performance.now();
+    scoreEl.classList.remove('punch');
+    void scoreEl.offsetWidth;
+    scoreEl.classList.add('punch');
+  }
+
   function hit(x, y) {
     let hitOne = false;
     for (let i = targets.length - 1; i >= 0; i--) {
@@ -188,8 +224,14 @@
       const hitR = t.r + cfg.tap;
       if (dx * dx + dy * dy <= hitR * hitR) {
         t.alive = false;
-        spawnParticles(t.x, t.y, t.hue);
-        score += Math.max(1, Math.round(50 / t.r * 10));
+        if (t.bomb) {
+          spawnBombParticles(t.x, t.y);
+          score = Math.max(0, score - cfg.bombPenalty);
+          triggerExplosion();
+        } else {
+          spawnParticles(t.x, t.y, t.hue);
+          score += Math.max(1, Math.round(50 / t.r * 10));
+        }
         scoreEl.textContent = score;
         targets.splice(i, 1);
         hitOne = true;
@@ -226,6 +268,7 @@
   }, { passive: false });
 
   function drawTarget(t) {
+    if (t.bomb) { drawBomb(t); return; }
     const { x, y, r, hue } = t;
     ctx.save();
     ctx.translate(x, y);
@@ -245,6 +288,43 @@
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBomb(t) {
+    const { x, y, r } = t;
+    ctx.save();
+    ctx.translate(x, y);
+    const grad = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
+    grad.addColorStop(0, '#5a5a5a');
+    grad.addColorStop(0.6, '#1d1d1d');
+    grad.addColorStop(1, '#000');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,80,80,0.85)';
+    ctx.lineWidth = Math.max(2, r * 0.12);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath();
+    ctx.arc(-r * 0.35, -r * 0.35, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = Math.max(2, r * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.quadraticCurveTo(r * 0.35, -r * 1.35, r * 0.55, -r * 1.55);
+    ctx.stroke();
+    const pulse = 1 + Math.sin(performance.now() / 80) * 0.35;
+    ctx.fillStyle = '#ff7a00';
+    ctx.beginPath();
+    ctx.arc(r * 0.6, -r * 1.6, r * 0.22 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff5b0';
+    ctx.beginPath();
+    ctx.arc(r * 0.6, -r * 1.6, r * 0.1 * pulse, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -275,6 +355,16 @@
   function render() {
     ctx.fillStyle = '#0b1020';
     ctx.fillRect(0, 0, W, H);
+    const now = performance.now();
+    let dx = 0, dy = 0;
+    if (now < shakeUntil) {
+      const t = (shakeUntil - now) / 300;
+      const amt = 14 * t;
+      dx = (Math.random() - 0.5) * amt;
+      dy = (Math.random() - 0.5) * amt;
+    }
+    ctx.save();
+    ctx.translate(dx, dy);
     // 背景の流線
     ctx.strokeStyle = 'rgba(255,255,255,0.04)';
     ctx.lineWidth = 1;
@@ -306,6 +396,13 @@
       ctx.arc(p.x, p.y, 4 * alpha + 1, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
+    const flashElapsed = performance.now() - flashStart;
+    if (flashElapsed < 350) {
+      const a = 0.45 * (1 - flashElapsed / 350);
+      ctx.fillStyle = `rgba(255, 60, 60, ${a})`;
+      ctx.fillRect(0, 0, W, H);
+    }
   }
 
   function loop(ts) {
@@ -327,6 +424,9 @@
     particles.length = 0;
     lastSpawn = 0;
     lastTime = 0;
+    shakeUntil = 0;
+    flashStart = -9999;
+    scoreEl.classList.remove('punch');
     scoreEl.textContent = score;
     hiscoreEl.textContent = getHi(curDiffKey);
     timeEl.textContent = timeLeft;
