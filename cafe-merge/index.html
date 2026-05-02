@@ -313,7 +313,7 @@
 </head>
 <body>
 
-<div id="version">v2.2.0 / build 2026-05-03-06</div>
+<div id="version">v2.2.1 / build 2026-05-03-07</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
@@ -356,8 +356,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.2.0';
-const BUILD   = '2026-05-03-06';
+const VERSION = 'v2.2.1';
+const BUILD   = '2026-05-03-07';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
@@ -391,8 +391,8 @@ const DANGER_PAD = 88;        // distance from canvas bottom for danger line
 const PLAYER_Y_PAD = 54;      // player drink center distance from canvas bottom
 
 // playable area bezel — narrower than full canvas to keep things from scattering
-const PLAY_INSET_PCT = 0.10;  // each side; 10% means 80% of W is playable
-const MAX_PLAY_WIDTH = 600;   // cap on play area width for very wide screens
+const PLAY_INSET_PCT = 0.16;  // each side; 16% means 68% of W is playable
+const MAX_PLAY_WIDTH = 520;   // cap on play area width for very wide screens
 
 // ===== SVG drinks =====
 function svgFor(level) {
