@@ -41,15 +41,20 @@
   }
   #overlay {
     position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     background: rgba(0,0,0,.55);
     text-align: center;
     padding: 20px;
   }
   #overlay.hidden { display: none; }
-  #overlay h1 { font-size: clamp(24px, 6vw, 48px); margin-bottom: 12px; }
-  #overlay p { font-size: clamp(14px, 3vw, 18px); margin-bottom: 24px; opacity: .85; }
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+  }
+  .screen.active { display: flex; }
+  .screen h1 { font-size: clamp(24px, 6vw, 48px); margin-bottom: 12px; }
+  .screen p  { font-size: clamp(14px, 3vw, 18px); margin-bottom: 18px; opacity: .85; line-height: 1.5; }
   #diffWrap {
     display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr));
     gap: 12px; width: min(360px, 90vw);
@@ -66,6 +71,28 @@
   .diffBtn[data-diff="hard"]   { background: #ff8800; box-shadow: 0 4px 14px rgba(255,136,0,.45); }
   .diffBtn[data-diff="oni"]    { background: #c1121f; box-shadow: 0 4px 14px rgba(193,18,31,.5); }
   .diffLabel { font-size: 14px; opacity: .9; margin-bottom: 8px; }
+  .primaryBtn {
+    font-size: 20px; padding: 14px 36px;
+    background: #ff4d6d; color: #fff;
+    border: none; border-radius: 999px;
+    cursor: pointer; font-weight: 700;
+    box-shadow: 0 6px 20px rgba(255,77,109,.5);
+  }
+  .primaryBtn:active { transform: scale(.96); }
+  .secondaryBtn {
+    font-size: 16px; padding: 12px 28px;
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.35); border-radius: 999px;
+    cursor: pointer; font-weight: 600;
+  }
+  .secondaryBtn:active { transform: scale(.96); }
+  .endActions { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+  .backBtn {
+    margin-top: 18px; font-size: 14px;
+    background: transparent; color: rgba(255,255,255,0.7);
+    border: none; cursor: pointer; padding: 6px 14px;
+  }
+  .backBtn:hover { color: #fff; }
 </style>
 </head>
 <body>
@@ -75,16 +102,32 @@
     <div>スコア: <span id="score">0</span> &nbsp;/&nbsp; ハイ: <span id="hiscore">0</span></div>
     <div>残り: <span id="time">30</span>秒</div>
   </div>
-  <div id="version">v1.1.0</div>
+  <div id="version">v1.2.0</div>
   <div id="overlay">
-    <h1 id="title">的当てゲーム</h1>
-    <p id="desc">右から流れてくる的をクリック / タップで撃ち落とそう!<br>制限時間は30秒。</p>
-    <div class="diffLabel">難易度を選択</div>
-    <div id="diffWrap">
-      <button class="diffBtn" data-diff="easy">やさしい</button>
-      <button class="diffBtn" data-diff="normal">ふつう</button>
-      <button class="diffBtn" data-diff="hard">むつかしい</button>
-      <button class="diffBtn" data-diff="oni">鬼</button>
+    <div class="screen active" id="screenStart">
+      <h1>的当てゲーム</h1>
+      <p>右から流れてくる的を撃ち落とそう!<br>🧨 爆弾は触らない / ❄️ 氷は2回タップ<br>制限時間 30秒</p>
+      <button id="btnGoDiff" class="primaryBtn">スタート</button>
+    </div>
+
+    <div class="screen" id="screenDiff">
+      <h1>難易度を選択</h1>
+      <div id="diffWrap">
+        <button class="diffBtn" data-diff="easy">やさしい</button>
+        <button class="diffBtn" data-diff="normal">ふつう</button>
+        <button class="diffBtn" data-diff="hard">むつかしい</button>
+        <button class="diffBtn" data-diff="oni">鬼</button>
+      </div>
+      <button id="btnDiffBack" class="backBtn">← もどる</button>
+    </div>
+
+    <div class="screen" id="screenEnd">
+      <h1 id="endTitle">終了!</h1>
+      <p id="endDesc"></p>
+      <div class="endActions">
+        <button id="btnAgain" class="primaryBtn">もう一度</button>
+        <button id="btnQuit" class="secondaryBtn">やめる</button>
+      </div>
     </div>
   </div>
 </div>
@@ -97,9 +140,24 @@
   const hiscoreEl = document.getElementById('hiscore');
   const timeEl = document.getElementById('time');
   const overlay = document.getElementById('overlay');
-  const titleEl = document.getElementById('title');
-  const descEl = document.getElementById('desc');
+  const endTitleEl = document.getElementById('endTitle');
+  const endDescEl = document.getElementById('endDesc');
   const diffBtns = document.querySelectorAll('.diffBtn');
+  const btnGoDiff = document.getElementById('btnGoDiff');
+  const btnDiffBack = document.getElementById('btnDiffBack');
+  const btnAgain = document.getElementById('btnAgain');
+  const btnQuit = document.getElementById('btnQuit');
+
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    if (name) {
+      const el = document.getElementById('screen' + name);
+      if (el) el.classList.add('active');
+      overlay.classList.remove('hidden');
+    } else {
+      overlay.classList.add('hidden');
+    }
+  }
 
   const DIFFICULTIES = {
     easy:   { label: 'やさしい',  rMin: 26, rRand: 26, sBase: 70,  sRand: 110, sRamp: 3,  intvBase: 950,  intvMin: 380, intvRamp: 16, tap: 22, bombChance: 0.08, bombPenalty: 4,  iceChance: 0.10 },
@@ -507,7 +565,7 @@
     scoreEl.textContent = score;
     hiscoreEl.textContent = getHi(curDiffKey);
     timeEl.textContent = timeLeft;
-    overlay.classList.add('hidden');
+    showScreen(null);
     running = true;
     secondStart = performance.now();
     requestAnimationFrame(loop);
@@ -534,16 +592,19 @@
     const isNew = score > prev;
     if (isNew) setHi(curDiffKey, score);
     hiscoreEl.textContent = getHi(curDiffKey);
-    titleEl.textContent = isNew ? '🏆 新記録!' : '終了!';
-    descEl.innerHTML =
+    endTitleEl.textContent = isNew ? '🏆 新記録!' : '終了!';
+    endDescEl.innerHTML =
       `難易度: <b>${cfg.label}</b> &nbsp;/&nbsp; スコア: <b>${score}</b>` +
       (isNew ? `<br><span style="color:#ffd166">前回ベスト ${prev} を更新!</span>` : '') +
-      hiTable() +
-      `もう一度難易度を選んで遊べます。`;
-    overlay.classList.remove('hidden');
+      hiTable();
+    showScreen('End');
   }
 
   hiscoreEl.textContent = getHi('normal');
+  btnGoDiff.addEventListener('click', () => showScreen('Diff'));
+  btnDiffBack.addEventListener('click', () => showScreen('Start'));
+  btnAgain.addEventListener('click', () => showScreen('Diff'));
+  btnQuit.addEventListener('click', () => showScreen('Start'));
   diffBtns.forEach(btn => btn.addEventListener('click', () => start(btn.dataset.diff)));
 })();
 </script>
