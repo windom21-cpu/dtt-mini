@@ -313,7 +313,7 @@
 </head>
 <body>
 
-<div id="version">v2.2.2 / build 2026-05-03-08</div>
+<div id="version">v2.2.3 / build 2026-05-03-09</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
@@ -356,8 +356,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.2.2';
-const BUILD   = '2026-05-03-08';
+const VERSION = 'v2.2.3';
+const BUILD   = '2026-05-03-09';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
@@ -383,9 +383,10 @@ const RADIUS_RATIO = [0, 1.0, 1.18, 1.38, 1.58, 1.78, 1.98, 2.20, 2.50];
 // physics — strong fire, low friction so untouched fires reach the back
 const FIRE_SPEED = 900;       // px/sec
 const FRICTION_K = 1.0;       // exponential decay rate per second
-const MIN_SPEED  = 6;
+const MIN_SPEED  = 0.5;       // very low so back-pull keeps packing
 const WALL_BOUNCE_SIDE = 0.5;
-const COLL_E     = 0.65;
+const COLL_E     = 0.05;      // near-inelastic — drinks stick on contact
+const BACK_PULL  = 32;        // continuous backward pull (px/sec²) for tight packing
 
 const DANGER_PAD = 88;        // distance from canvas bottom for danger line
 const PLAYER_Y_PAD = 54;      // player drink center distance from canvas bottom
@@ -701,6 +702,9 @@ function physicsStep(dt) {
     d.vx *= decay;
     d.vy *= decay;
     if (Math.hypot(d.vx, d.vy) < MIN_SPEED) { d.vx = 0; d.vy = 0; }
+    // continuous gentle pull toward the back, applied after zeroing so even
+    // settled drinks creep into each other for tight packing
+    d.vy -= BACK_PULL * dt;
     if (d.x - d.radius < wallLeft) { d.x = wallLeft + d.radius; d.vx = -d.vx * WALL_BOUNCE_SIDE; }
     else if (d.x + d.radius > wallRight) { d.x = wallRight - d.radius; d.vx = -d.vx * WALL_BOUNCE_SIDE; }
     if (d.y - d.radius < 0) { d.y = d.radius; d.vy = 0; }
