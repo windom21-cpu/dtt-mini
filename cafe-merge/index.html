@@ -313,7 +313,7 @@
 </head>
 <body>
 
-<div id="version">v2.2.3 / build 2026-05-03-09</div>
+<div id="version">v2.2.4 / build 2026-05-03-10</div>
 
 <div id="title-screen">
   <div id="title-icon"></div>
@@ -356,8 +356,8 @@
 
 <script>
 // ===== Version =====
-const VERSION = 'v2.2.3';
-const BUILD   = '2026-05-03-09';
+const VERSION = 'v2.2.4';
+const BUILD   = '2026-05-03-10';
 console.log(`カフェマージ ${VERSION} / build ${BUILD}`);
 
 // ===== Constants =====
@@ -377,8 +377,15 @@ const DRINKS = [
 ];
 
 // Radii — recomputed at resize. Each level gets a slightly larger circle.
+// RADIUS[lv] = drawing/bounding radius (size of the SVG box rendered).
 const RADIUS = [0, 24, 28, 33, 38, 43, 48, 54, 60];
 const RADIUS_RATIO = [0, 1.0, 1.18, 1.38, 1.58, 1.78, 1.98, 2.20, 2.50];
+
+// VISIBLE_FACTOR[lv] = collision radius / drawing radius.
+// Each cup SVG occupies only ~40-78% of its viewBox (the rest is shadow/saucer
+// padding). Using the bounding radius for collisions made drinks look like
+// they had invisible padding between them. Use the actual visible cup width.
+const VISIBLE_FACTOR = [0, 0.62, 0.46, 0.46, 0.78, 0.46, 0.46, 0.52, 0.58];
 
 // physics — strong fire, low friction so untouched fires reach the back
 const FIRE_SPEED = 900;       // px/sec
@@ -556,8 +563,9 @@ class Drink {
     this.y = y;
     this.vx = vx;
     this.vy = vy;
-    this.radius = RADIUS[level];
-    this.mass = this.radius * this.radius;
+    this.drawRadius = RADIUS[level];
+    this.radius = RADIUS[level] * VISIBLE_FACTOR[level]; // collision matches visible cup
+    this.mass = this.drawRadius * this.drawRadius;       // mass tracks visual size
     this.id = Math.random();
   }
 }
@@ -623,7 +631,7 @@ function recomputeBounds() {
 function recomputeRadii() {
   const playW = wallRight - wallLeft;
   // bigger drinks → tighter table, real game-over pressure
-  const baseUnit = Math.min(playW / 11, H / 17);
+  const baseUnit = Math.min(playW / 9, H / 15);
   for (let lv = 1; lv <= MAX_LEVEL; lv++) {
     RADIUS[lv] = baseUnit * RADIUS_RATIO[lv];
   }
