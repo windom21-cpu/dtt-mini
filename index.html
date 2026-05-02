@@ -92,46 +92,61 @@
 
   /* ===== Game screen ===== */
   #game-screen {
-    flex-direction: row;
-    gap: 16px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
     align-items: stretch;
   }
-  #left-panel, #right-panel {
+  #info-bar {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    justify-content: center;
-    min-width: 90px;
+    gap: 4px;
+    flex-shrink: 0;
+    height: 72px;
   }
+  .info-stats {
+    flex: 1;
+    display: flex;
+    gap: 4px;
+  }
+  .info-stats .info-box { flex: 1; }
   .info-box {
     background: #20232b;
     border: 1px solid #353945;
-    border-radius: 8px;
-    padding: 10px 12px;
+    border-radius: 6px;
+    padding: 4px 6px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
   }
+  .info-box.preview { width: 70px; padding: 2px; }
   .info-label {
-    font-size: 11px;
+    font-size: 10px;
     color: #8a90a0;
     letter-spacing: 1px;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   .info-value {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: bold;
     color: #fff;
     font-variant-numeric: tabular-nums;
+    line-height: 1.1;
   }
   .preview-canvas {
     background: #1a1d24;
     border: 1px solid #353945;
-    border-radius: 8px;
+    border-radius: 4px;
     display: block;
     width: 100%;
-    aspect-ratio: 1;
+    flex: 1;
+    min-height: 0;
   }
   #board-wrap {
     position: relative;
+    flex: 1;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -142,7 +157,10 @@
     border-radius: 4px;
     display: block;
     image-rendering: pixelated;
-    height: min(92vh, 88vw);
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    width: auto;
     aspect-ratio: 1 / 2;
   }
   #pause-btn {
@@ -157,6 +175,7 @@
     border-radius: 6px;
     font-size: 16px;
     cursor: pointer;
+    z-index: 5;
   }
 
   /* ===== Overlays ===== */
@@ -205,31 +224,51 @@
   .overlay-btn.secondary { background: #555; }
   .overlay-btn:active { transform: translateY(1px); }
 
-  /* ===== Mobile touch controls ===== */
+  /* ===== Controller-style touch controls ===== */
   #touch-controls {
     display: none;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 8px;
-    gap: 6px;
+    flex-shrink: 0;
     justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px 10px 10px;
+    gap: 8px;
   }
+  #dpad, #actions {
+    display: grid;
+    gap: 6px;
+  }
+  #dpad {
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(2, 48px);
+  }
+  #dpad .btn-left   { grid-column: 1; grid-row: 1 / span 2; align-self: stretch; height: auto; }
+  #dpad .btn-right  { grid-column: 3; grid-row: 1 / span 2; align-self: stretch; height: auto; }
+  #dpad .btn-soft   { grid-column: 2; grid-row: 2; }
+  #dpad .btn-spacer { grid-column: 2; grid-row: 1; visibility: hidden; }
+  #actions {
+    grid-template-columns: repeat(2, 60px);
+    grid-template-rows: repeat(2, 48px);
+  }
+  #actions .btn-rotate { grid-column: 1; grid-row: 2; background: #4b6fa8; }
+  #actions .btn-hard   { grid-column: 2; grid-row: 1; background: #b8584a; }
+  #actions .btn-hold   { grid-column: 1; grid-row: 1; background: #2a8a4a; }
   #touch-controls button {
-    flex: 1;
     background: #2a2e38;
-    border: 1px solid #444;
+    border: 1px solid #555;
     color: #fff;
-    border-radius: 8px;
-    height: 56px;
-    font-size: 20px;
+    border-radius: 10px;
+    font-size: 22px;
     font-weight: bold;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+    padding: 0;
   }
-  #touch-controls button:active { background: #3a4050; }
+  #touch-controls button:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+    filter: brightness(1.2);
+  }
   @media (pointer: coarse), (max-width: 700px) {
     #touch-controls { display: flex; }
-    #game-screen { padding-bottom: 78px; }
   }
 
   /* ===== Version badge ===== */
@@ -288,14 +327,28 @@
 
 <!-- ===================== Game screen ===================== -->
 <div id="game-screen" class="screen hidden">
-  <div id="left-panel">
-    <div class="info-box">
+  <div id="info-bar">
+    <div class="info-box preview">
       <div class="info-label">HOLD</div>
       <canvas id="hold-canvas" class="preview-canvas" width="80" height="80"></canvas>
     </div>
-    <div class="info-box">
-      <div class="info-label">SCORE</div>
-      <div class="info-value" id="score-val">0</div>
+    <div class="info-stats">
+      <div class="info-box">
+        <div class="info-label">SCORE</div>
+        <div class="info-value" id="score-val">0</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">LINES</div>
+        <div class="info-value" id="lines-val">0</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">LV</div>
+        <div class="info-value" id="level-val">1</div>
+      </div>
+    </div>
+    <div class="info-box preview">
+      <div class="info-label">NEXT</div>
+      <canvas id="next-canvas" class="preview-canvas" width="80" height="80"></canvas>
     </div>
   </div>
 
@@ -320,32 +373,22 @@
     </div>
   </div>
 
-  <div id="right-panel">
-    <div class="info-box">
-      <div class="info-label">NEXT</div>
-      <canvas id="next-canvas" class="preview-canvas" width="80" height="80"></canvas>
-    </div>
-    <div class="info-box">
-      <div class="info-label">LINES</div>
-      <div class="info-value" id="lines-val">0</div>
-    </div>
-    <div class="info-box">
-      <div class="info-label">LEVEL</div>
-      <div class="info-value" id="level-val">1</div>
-    </div>
-  </div>
-
   <div id="touch-controls">
-    <button data-act="left">◀</button>
-    <button data-act="rotate">⟳</button>
-    <button data-act="right">▶</button>
-    <button data-act="soft">▼</button>
-    <button data-act="hard">⤓</button>
-    <button data-act="hold">H</button>
+    <div id="dpad">
+      <button class="btn-left"   data-act="left">◀</button>
+      <button class="btn-spacer" tabindex="-1"></button>
+      <button class="btn-soft"   data-act="soft">▼</button>
+      <button class="btn-right"  data-act="right">▶</button>
+    </div>
+    <div id="actions">
+      <button class="btn-hold"   data-act="hold">HOLD</button>
+      <button class="btn-hard"   data-act="hard">⤓</button>
+      <button class="btn-rotate" data-act="rotate">⟳</button>
+    </div>
   </div>
 </div>
 
-<div id="version">v1.0.0 / build 2026-05-02-01</div>
+<div id="version">v1.1.0 / build 2026-05-02-02</div>
 
 <script>
 'use strict';
@@ -353,8 +396,8 @@
 // ============================================================
 // けとるす — Tetris-like falling game
 // ============================================================
-const VERSION = 'v1.0.0';
-const BUILD   = '2026-05-02-01';
+const VERSION = 'v1.1.0';
+const BUILD   = '2026-05-02-02';
 console.log('けとるす ' + VERSION + ' build ' + BUILD);
 
 const COLS = 10;
@@ -732,7 +775,7 @@ document.addEventListener('keydown', (e) => {
   drawBoard();
 });
 
-document.querySelectorAll('#touch-controls button').forEach(btn => {
+document.querySelectorAll('#touch-controls button[data-act]').forEach(btn => {
   const act = btn.dataset.act;
   let repeatTimer = null;
   const fire = () => {
